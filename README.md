@@ -2,11 +2,14 @@
 
 My custom [Omarchy](https://omarchy.org) plugins and configuration.
 
-| Repo path   | Install location        | Contents                                              |
-|-------------|-------------------------|-------------------------------------------------------|
-| `plugins/`  | `~/.config/omarchy/plugins/` | Custom Omarchy shell (Quickshell) plugins        |
-| `omarchy/`  | `~/.config/omarchy/`    | Shell settings, menu extension, hooks, themes, branding |
-| `hypr/`     | `~/.config/hypr/`       | Hyprland (Lua) config and display profiles            |
+| Repo path     | Install location             | Contents |
+|---------------|------------------------------|----------|
+| `plugins/`    | `~/.config/omarchy/plugins/` | Custom Omarchy shell (Quickshell) plugins |
+| `omarchy/`    | `~/.config/omarchy/`         | Shell settings, menu extension, hooks, themes, branding |
+| `hypr/`       | `~/.config/hypr/`            | Hyprland (Lua) config and display profiles |
+| `bin/`        | `~/.local/bin/`              | Helper scripts used by the config and plugins |
+| `quickshell/` | `~/.config/quickshell/`      | Remmina launcher |
+| `install.sh`  | n/a                          | Interactive installer (see [Installing](#installing)) |
 
 Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which has its own repo), wallpapers, `.bak` files and `plugins-archive/`.
 
@@ -83,12 +86,41 @@ Not stored here: `omazed` (used by the `theme-set` hook; not currently installed
 
 ## Installing
 
-Copy the directories to their install locations, e.g.:
+```sh
+git clone git@github.com:ybensoussan/omarchy-plugins.git
+cd omarchy-plugins
+./install.sh
+```
+
+`install.sh` shows a picker (uses [`gum`](https://github.com/charmbracelet/gum), which ships with Omarchy; falls back to a numbered prompt) where you choose what to install:
+
+- each plugin individually (`plugins/*` -> `~/.config/omarchy/plugins/`)
+- Omarchy shell settings (`shell.json`, `shell.toml`)
+- Omarchy menu extension
+- Omarchy hooks
+- Omarchy themes, templates and branding
+- Hyprland config (`hypr/` -> `~/.config/hypr/`)
+- helper scripts (`bin/` -> `~/.local/bin/`)
+- Remmina launcher (`quickshell/` -> `~/.config/quickshell/`)
+
+Options:
+
+| Flag | Effect |
+|------|--------|
+| `--all` | Install everything without prompting |
+| `--link` | Symlink instead of copy, so edits in `~/.config` go straight into the repo (handy for committing changes) |
+| `--dry-run` | Print what would be done without changing anything |
+
+Anything that already exists is moved aside as `<name>.bak.<timestamp>` before being replaced, and already-correct symlinks are left alone.
+
+After installing, apply the changes:
 
 ```sh
-cp -r plugins/* ~/.config/omarchy/plugins/
-cp -r omarchy/* ~/.config/omarchy/
-cp -r hypr/* ~/.config/hypr/
-cp -a bin/* ~/.local/bin/
-cp -r quickshell/* ~/.config/quickshell/
+hyprctl reload
+omarchy-restart-shell
 ```
+
+Notes:
+- `shell.json` enables plugins by id. Selecting only some plugins means the matching bar entries in `shell.json` will refer to plugins that aren't installed, so install the shell settings together with the plugins they list.
+- `hypr/workspace-profile.lua`, `workspace-order.json` and the monitor profiles in `display-profiles/` are specific to my monitors (matched by make/model/serial). On other hardware, install the config and then recreate profiles with the Displays & Workspaces manager (`SUPER+SHIFT+N`).
+- `omazed` (used by the `theme-set` hook) must be installed separately.
