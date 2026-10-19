@@ -26,7 +26,7 @@ The live copies are the source of truth for day-to-day use. The repo holds copie
 
 Each plugin dir has a `manifest.json` (`schemaVersion`, `id`, `kinds`, `entryPoints`, optional `barWidget` block). `id` must match the directory name and the id used in `omarchy/shell.json`. Kinds are `bar-widget` or `overlay`.
 
-Plugins: `bw-vault`, `yonathan.displays` (overlay, the Displays & Workspaces manager), `yonathan.monitor-profile`, `yonathan.tray` and `yonathan.workspaces` (clones of the stock `omarchy.tray` / `omarchy.workspaces`), `yonathan.workspace-backgrounds`, `yonathan.workspace-launcher` (overlay). `yonathan.bw-vault` is a stale duplicate directory with only a manifest-less stub; prefer `bw-vault`.
+Plugins: `bw-vault`, `yonathan.displays` (overlay, the Displays & Workspaces manager), `yonathan.monitor-profile`, `yonathan.tray` and `yonathan.workspaces` (clones of the stock `omarchy.tray` / `omarchy.workspaces`), `yonathan.workspace-backgrounds`, `yonathan.workspace-launcher` (overlay). The live `~/.config/omarchy/plugins/yonathan.bw-vault` holds only a `.bak` file and is intentionally not tracked.
 
 Tests (plain Node, no deps):
 ```sh
