@@ -40,7 +40,7 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
   - `trigger.monitor-profile.*`: apply a display profile (`omarchy-display-profiles apply <name>`).
   - `trigger.workspaces.*`: switch to a named workspace (`omarchy-workspace-switch`).
   - `trigger.move-window-workspace.*`: move the focused window to a named workspace or the scratchpad (`omarchy-workspace-move-window`).
-- **`hooks/`**: Omarchy hooks. `theme-set` runs `omazed set <theme>` so Zed follows the theme. The `post-update.d/*.hook` files invite you (once) to install Voxtype dictation, pick a default agent and set up the fingerprint reader. `*.sample` files are the stock examples.
+- **`hooks/`**: Omarchy hooks. The `post-update.d/*.hook` files invite you (once) to install Voxtype dictation, pick a default agent and set up the fingerprint reader. `*.sample` files are the stock examples.
 - **`themes/`**, **`themed/`**: theme color/icon files and a sample template.
 - **`branding/`**: `about.txt` and `screensaver.txt`.
 
@@ -82,7 +82,7 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
 
 ## External dependencies
 
-Not stored here: `omazed` (used by the `theme-set` hook; not currently installed on this machine) and the Omarchy-provided `omarchy-*` commands.
+Not stored here: the Omarchy-provided `omarchy-*` commands.
 
 ## Installing
 
@@ -123,4 +123,3 @@ omarchy-restart-shell
 Notes:
 - `shell.json` enables plugins by id. Selecting only some plugins means the matching bar entries in `shell.json` will refer to plugins that aren't installed, so install the shell settings together with the plugins they list.
 - `hypr/workspace-profile.lua`, `workspace-order.json` and the monitor profiles in `display-profiles/` are specific to my monitors (matched by make/model/serial). On other hardware, install the config and then recreate profiles with the Displays & Workspaces manager (`SUPER+SHIFT+N`).
-- `omazed` (used by the `theme-set` hook) must be installed separately.
