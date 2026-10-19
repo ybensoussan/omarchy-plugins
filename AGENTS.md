@@ -19,14 +19,13 @@ The live copies are the source of truth for day-to-day use. The repo holds copie
 | `omarchy/themes/`, `themed/`, `branding/` | `~/.config/omarchy/` | |
 | `hypr/` | `~/.config/hypr/` | Hyprland **Lua** config (`hyprland.lua` is the entry point) |
 | `bin/` | `~/.local/bin/` | Helper scripts invoked by keybindings, menu entries, plugins |
-| `quickshell/remmina-launcher/` | `~/.config/quickshell/remmina-launcher/` | Standalone Quickshell popup |
 | `install.sh` | n/a | Interactive installer (`--all`, `--link`, `--dry-run`) |
 
 ## Plugins
 
 Each plugin dir has a `manifest.json` (`schemaVersion`, `id`, `kinds`, `entryPoints`, optional `barWidget` block). `id` must match the directory name and the id used in `omarchy/shell.json`. Kinds are `bar-widget` or `overlay`.
 
-Plugins: `bw-vault`, `yonathan.displays` (overlay, the Displays & Workspaces manager), `yonathan.monitor-profile`, `yonathan.tray` and `yonathan.workspaces` (clones of the stock `omarchy.tray` / `omarchy.workspaces`), `yonathan.workspace-backgrounds`, `yonathan.workspace-launcher` (overlay). The live `~/.config/omarchy/plugins/yonathan.bw-vault` holds only a `.bak` file and is intentionally not tracked.
+Plugins: `bw-vault`, `yonathan.displays` (overlay, the Displays & Workspaces manager), `yonathan.monitor-profile`, `yonathan.tray` and `yonathan.workspaces` (clones of the stock `omarchy.tray` / `omarchy.workspaces`), `yonathan.workspace-backgrounds`, `yonathan.workspace-launcher` and `yonathan.remmina-launcher` (overlays; each needs a float/center window rule in `hypr/hyprland.lua`). The live `~/.config/omarchy/plugins/yonathan.bw-vault` holds only a `.bak` file and is intentionally not tracked.
 
 Tests (plain Node, no deps):
 ```sh
@@ -61,7 +60,6 @@ for p in $R/plugins/*/; do n=$(basename $p); [ -d $C/omarchy/plugins/$n ] && rsy
 rsync -a --exclude='*.bak*' $C/hypr/ $R/hypr/
 rsync -a --exclude='*.bak*' $C/omarchy/{shell.json,shell.toml,extensions,hooks,branding,themed} $R/omarchy/
 for s in $R/bin/*; do cp -a ~/.local/bin/$(basename $s) $s; done
-rsync -a --exclude='*.bak*' $C/quickshell/remmina-launcher/ $R/quickshell/remmina-launcher/
 git -C $R status --short   # review the diff before committing
 ```
 

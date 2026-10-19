@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "yonathan.remmina-launcher",
+  "name": "Remmina Launcher",
+  "version": "1.0.0",
+  "author": "yonathan",
+  "description": "Search saved Remmina connections and open them.",
+  "kinds": ["overlay"],
+  "keepLoaded": true,
+  "entryPoints": {
+    "overlay": "RemminaLauncher.qml"
+  }
+}

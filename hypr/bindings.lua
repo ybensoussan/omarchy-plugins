@@ -52,6 +52,8 @@ for key, direction in pairs({ LEFT = "l", RIGHT = "r", UP = "u", DOWN = "d" }) d
   end)
 end
 
--- Searchable Remmina connection launcher (~/.config/quickshell/remmina-launcher).
+-- Searchable Remmina connection launcher (~/.config/omarchy/plugins/yonathan.remmina-launcher).
 hl.unbind("SUPER + R")
-o.bind("SUPER + R", "Remmina launcher", "/home/yonathan/.config/quickshell/remmina-launcher/toggle.sh")
+o.bind("SUPER + R", "Remmina launcher", function()
+  hl.exec_cmd("omarchy-shell -q yonathan.remmina-launcher toggle")
+end)

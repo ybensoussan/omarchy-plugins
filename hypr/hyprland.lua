@@ -42,6 +42,7 @@ end
 -- Displays & Workspaces manager: always float and center
 o.window({ class = "org.quickshell", title = "Displays & Workspaces" }, { float = true, center = true })
 o.window({ class = "org.quickshell", title = "App Launcher" }, { float = true, center = true })
+o.window({ class = "org.quickshell", title = "Remmina Launcher" }, { float = true, center = true })
 o.window({ class = "bw-vault", title = "Bitwarden Vault" }, { float = true, center = true })
 
 -- Added by hyprmoncfg: its generated monitor rules load last, so nothing before this can override the applied layout.

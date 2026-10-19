@@ -8,7 +8,6 @@ My custom [Omarchy](https://omarchy.org) plugins and configuration.
 | `omarchy/`    | `~/.config/omarchy/`         | Shell settings, menu extension, hooks, themes, branding |
 | `hypr/`       | `~/.config/hypr/`            | Hyprland (Lua) config and display profiles |
 | `bin/`        | `~/.local/bin/`              | Helper scripts used by the config and plugins |
-| `quickshell/` | `~/.config/quickshell/`      | Remmina launcher |
 | `install.sh`  | n/a                          | Interactive installer (see [Installing](#installing)) |
 
 Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which has its own repo), wallpapers, `.bak` files and `plugins-archive/`.
@@ -23,6 +22,7 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
 | `yonathan.tray` | bar widget (Status) | Custom system tray (status notifier items), cloned from `omarchy.tray`. |
 | `yonathan.workspaces` | bar widget (Compositor) | Workspace indicators, cloned from `omarchy.workspaces`. `WorkspaceOrder.js` orders them according to `hypr/workspace-order.json` (tests in `tests/`). |
 | `yonathan.workspace-backgrounds` | bar widget (Appearance) | Assign a background image to each workspace. The panel stores the mapping in a state file and applies it with `omarchy-theme-bg-set`; images are picked via `omarchy-theme-bg-switcher`. |
+| `yonathan.remmina-launcher` | overlay (kept loaded) | Searchable launcher over saved Remmina connections; selecting one opens it. Opened with `SUPER+R`; floated and centered by a window rule in `hyprland.lua`. |
 | `yonathan.workspace-launcher` | overlay (kept loaded) | Searchable launcher over open windows and applications; selecting one switches to its workspace. Opened with `SUPER+N`. |
 
 ## Omarchy settings (`omarchy/`)
@@ -34,7 +34,7 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
     - Left: Omarchy menu, `yonathan.workspaces`, `yonathan.workspace-backgrounds`.
     - Center: keyboard layout, indicators, clock (`dddd HH:mm`, alt format `d MMMM 'W'ww yyyy`), weather, system update.
     - Right: `yonathan.monitor-profile`, `yonathan.tray`, `bw-vault`, notification center, tailscale, agents, bluetooth, network, monitor, audio, power.
-  - `plugins`: loaded plugins (`yonathan.displays`, `yonathan.workspace-launcher`, `bw-vault`).
+  - `plugins`: loaded plugins (`yonathan.displays`, `yonathan.workspace-launcher`, `yonathan.remmina-launcher`, `bw-vault`).
 - **`extensions/omarchy-menu.jsonc`**: adds to the Omarchy menu (`omarchy menu summon <name>`):
   - `trigger.displays`: open Displays & Workspaces.
   - `trigger.monitor-profile.*`: apply a display profile (`omarchy-display-profiles apply <name>`).
@@ -59,7 +59,7 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
   | `SUPER+N` | Workspace launcher plugin |
   | `SUPER+SHIFT+N` | Displays & Workspaces manager |
   | `SUPER+SHIFT+ALT+arrows` | Move window to the workspace on the monitor in that direction |
-  | `SUPER+R` | Remmina launcher (`~/.config/quickshell/remmina-launcher/toggle.sh`) |
+  | `SUPER+R` | Remmina launcher (`yonathan.remmina-launcher` plugin) |
 - **`autostart.lua`**: starts `omarchy-display-profiles watch` (auto-switch profile on monitor changes), launches the daily apps (opencode, Zen, Zed, Remmina, Slack, Chromium web apps) and uses window rules to place each on its workspace. Also points `SSH_AUTH_SOCK` at the systemd user `ssh-agent.socket`.
 - **`workspace-profile.lua`**: *generated* by `omarchy-display-profiles` for the active profile. Don't edit by hand; use the Displays & Workspaces manager.
 - **`workspace-order.json`**: generated workspace order and workspace-to-monitor assignments for the active profile.
@@ -70,7 +70,7 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
 - **`xdph.conf`**: xdg-desktop-portal-hyprland screencopy: allow tokens by default and use `hyprland-preview-share-picker`.
 - **`.luarc.json`**: Lua language server config.
 
-## Scripts (`bin/`, `quickshell/`)
+## Scripts (`bin/`)
 
 | Path | Install location | Description |
 |------|------------------|-------------|
@@ -78,7 +78,6 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
 | `bin/omarchy-display-profiles` | `~/.local/bin/` | Applies/watches display profiles and generates `workspace-profile.lua`. |
 | `bin/omarchy-workspace-switch`, `bin/omarchy-workspace-move-window` | `~/.local/bin/` | Switch to / move a window to a named workspace. |
 | `bin/wait-for-notifications` | `~/.local/bin/` | Waits for the notification service before launching an app (used in autostart). |
-| `quickshell/remmina-launcher/` | `~/.config/quickshell/` | Remmina launcher popup (`SUPER+R`). |
 
 ## External dependencies
 
@@ -101,7 +100,6 @@ cd omarchy-plugins
 - Omarchy themes, templates and branding
 - Hyprland config (`hypr/` -> `~/.config/hypr/`)
 - helper scripts (`bin/` -> `~/.local/bin/`)
-- Remmina launcher (`quickshell/` -> `~/.config/quickshell/`)
 
 Options:
 

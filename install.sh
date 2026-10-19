@@ -32,7 +32,6 @@ ITEMS+=(
   "Omarchy themes, themed templates and branding|omarchy/themes omarchy/themed omarchy/branding|$CFG/omarchy"
   "Hyprland config (hypr/*.lua, conf, json)|hypr/.|$CFG/hypr"
   "Helper scripts (bin/ -> ~/.local/bin)|bin/.|$BIN"
-  "Remmina launcher (quickshell)|quickshell/remmina-launcher|$CFG/quickshell"
 )
 
 labels=(); for i in "${ITEMS[@]}"; do labels+=("${i%%|*}"); done
