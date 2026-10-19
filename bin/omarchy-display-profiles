@@ -1,0 +1,3 @@
+#!/bin/sh
+# Displays & Workspaces backend. See ~/.local/share/display-profiles/displayprofiles.py
+exec python3 "$HOME/.local/share/display-profiles/displayprofiles.py" "$@"

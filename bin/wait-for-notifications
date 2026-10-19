@@ -1,0 +1,12 @@
+#!/bin/bash
+# Wait (up to 20s) until a notification daemon owns org.freedesktop.Notifications,
+# then exec the given command. Chromium only probes for the D-Bus notification
+# server once at startup; if it starts before the Omarchy shell, it falls back to
+# its own built-in popups for the rest of the session.
+
+for _ in $(seq 40); do
+  busctl --user status org.freedesktop.Notifications &>/dev/null && break
+  sleep 0.5
+done
+
+exec "$@"

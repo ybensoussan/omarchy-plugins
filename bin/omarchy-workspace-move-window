@@ -1,0 +1,3 @@
+#!/bin/sh
+# Move the active window to a workspace by name (or number, or special:NAME) and follow it.
+exec omarchy-display-profiles send "$1" >/dev/null

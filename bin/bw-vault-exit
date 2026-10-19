@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+state_dir="${XDG_RUNTIME_DIR:-/tmp}"
+pid_file="$state_dir/bw-vault.pid"
+session_file="$state_dir/bw-vault.session"
+index_file="$state_dir/bw-vault.index"
+if [[ -s "$pid_file" ]]; then
+  pid="$(<"$pid_file")"
+  kill "$pid" 2>/dev/null || true
+fi
+if [[ -r "$session_file" ]]; then
+  BW_SESSION="$(<"$session_file")" bw lock >/dev/null 2>&1 || true
+fi
+rm -f "$pid_file" "$session_file" "$index_file"

@@ -67,9 +67,19 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
 - **`xdph.conf`**: xdg-desktop-portal-hyprland screencopy: allow tokens by default and use `hyprland-preview-share-picker`.
 - **`.luarc.json`**: Lua language server config.
 
+## Scripts (`bin/`, `quickshell/`)
+
+| Path | Install location | Description |
+|------|------------------|-------------|
+| `bin/bw-vault-toggle`, `bin/bw-vault-exit` | `~/.local/bin/` | Open/close the Bitwarden vault window; exit locks the vault. |
+| `bin/omarchy-display-profiles` | `~/.local/bin/` | Applies/watches display profiles and generates `workspace-profile.lua`. |
+| `bin/omarchy-workspace-switch`, `bin/omarchy-workspace-move-window` | `~/.local/bin/` | Switch to / move a window to a named workspace. |
+| `bin/wait-for-notifications` | `~/.local/bin/` | Waits for the notification service before launching an app (used in autostart). |
+| `quickshell/remmina-launcher/` | `~/.config/quickshell/` | Remmina launcher popup (`SUPER+R`). |
+
 ## External dependencies
 
-These are referenced but not stored in this repo: `bw-vault-toggle` / `bw-vault-exit`, `~/.config/quickshell/remmina-launcher/`, `omarchy-display-profiles`, `omarchy-workspace-switch`, `omarchy-workspace-move-window`, `~/.local/bin/wait-for-notifications`, and `omazed`.
+Not stored here: `omazed` (used by the `theme-set` hook; not currently installed on this machine) and the Omarchy-provided `omarchy-*` commands.
 
 ## Installing
 
@@ -79,4 +89,6 @@ Copy the directories to their install locations, e.g.:
 cp -r plugins/* ~/.config/omarchy/plugins/
 cp -r omarchy/* ~/.config/omarchy/
 cp -r hypr/* ~/.config/hypr/
+cp -a bin/* ~/.local/bin/
+cp -r quickshell/* ~/.config/quickshell/
 ```

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+state_dir="${XDG_RUNTIME_DIR:-/tmp}"
+pid_file="$state_dir/bw-vault.pid"
+if [[ -s "$pid_file" ]] && kill -0 "$(<"$pid_file")" 2>/dev/null; then
+  if ! hyprctl monitors -j | jq -e '.[] | select(.specialWorkspace.name == "bw-vault")' >/dev/null; then
+    hyprctl dispatch togglespecialworkspace bw-vault >/dev/null
+  fi
+  hyprctl dispatch focuswindow 'title:^(Bitwarden Vault)$' >/dev/null
+else
+  rm -f "$pid_file"
+  foot --app-id=bw-vault --title='Bitwarden Vault' --window-size-pixels=1100x800 bw-vault >/dev/null 2>&1 &
+fi

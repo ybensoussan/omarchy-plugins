@@ -1,0 +1,3 @@
+#!/bin/sh
+# Focus a workspace by name (or number) using the active profile's numbering.
+exec omarchy-display-profiles switch "$1" >/dev/null
