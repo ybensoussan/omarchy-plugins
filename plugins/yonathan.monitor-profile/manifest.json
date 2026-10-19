@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "yonathan.monitor-profile",
+  "name": "Monitor Profile",
+  "version": "1.0.0",
+  "author": "yonathan",
+  "description": "Shows the active workspace monitor profile.",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Monitor Profile",
+    "description": "Shows the active workspace monitor profile.",
+    "category": "System",
+    "allowMultiple": false
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "workspaces": [
+    {
+      "name": "terminal",
+      "number": 1,
+      "apps": [
+        "^com\\.mitchellh\\.ghostty$"
+      ],
+      "launch": {
+        "^com\\.mitchellh\\.ghostty$": "ghostty -e herdr"
+      }
+    },
+    {
+      "name": "browser",
+      "number": 2,
+      "apps": [
+        "^zen$"
+      ],
+      "launch": {}
+    },
+    {
+      "name": "editor",
+      "number": 3,
+      "apps": [
+        "^dev\\.zed\\.Zed$"
+      ],
+      "launch": {}
+    },
+    {
+      "name": "remote",
+      "number": 4,
+      "apps": [
+        "^org\\.remmina\\.Remmina$"
+      ],
+      "launch": {}
+    },
+    {
+      "name": "slack",
+      "number": 5,
+      "apps": [
+        "^chrome-app\\.slack\\.com__client-Default$",
+        "^Bitwarden$"
+      ],
+      "launch": {}
+    },
+    {
+      "name": "portal",
+      "number": 6,
+      "apps": [
+        "^chrome-portal\\.azure\\.com__-Default$"
+      ],
+      "launch": {}
+    },
+    {
+      "name": "ai",
+      "number": 7,
+      "apps": [
+        "^com\\.anthropic\\.Claude$",
+        "^ai\\.opencode\\.desktop$"
+      ],
+      "launch": {}
+    },
+    {
+      "name": "outlook",
+      "number": 8,
+      "apps": [
+        "^chrome-faolnafnngnfdaknnbpnkhgohbobgegn-Default$"
+      ],
+      "launch": {}
+    },
+    {
+      "name": "teams",
+      "number": 9,
+      "apps": [
+        "^chrome-ompifgpmddkgmclendfeacglnodjjndh-Default$"
+      ],
+      "launch": {}
+    },
+    {
+      "name": "spotify",
+      "number": 10,
+      "apps": [
+        "^Spotify$"
+      ],
+      "launch": {}
+    }
+  ]
+}

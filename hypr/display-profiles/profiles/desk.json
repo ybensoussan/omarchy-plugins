@@ -1,0 +1,90 @@
+{
+  "version": 2,
+  "name": "desk",
+  "auto": true,
+  "monitors": [
+    {
+      "match": {
+        "make": "Sharp Corporation",
+        "model": "LQ150P1JX51",
+        "serial": "0x002223A0",
+        "description": "Sharp Corporation LQ150P1JX51 0x002223A0",
+        "output": "eDP-1"
+      },
+      "label": "Built-in display",
+      "enabled": true,
+      "mode": "2496x1664@59.98Hz",
+      "width": 2496,
+      "height": 1664,
+      "x": 0,
+      "y": 560,
+      "scale": 1.6,
+      "transform": 0,
+      "workspaces": [
+        "ai",
+        "spotify"
+      ]
+    },
+    {
+      "match": {
+        "make": "Dell Inc.",
+        "model": "DELL P2720DC",
+        "serial": "7F3SK53",
+        "description": "Dell Inc. DELL P2720DC 7F3SK53",
+        "output": "DP-6"
+      },
+      "label": "DELL P2720DC",
+      "enabled": true,
+      "mode": "2560x1440@59.95Hz",
+      "width": 2560,
+      "height": 1440,
+      "x": 1560,
+      "y": 560,
+      "scale": 1.0,
+      "transform": 0,
+      "workspaces": [
+        "terminal",
+        "browser",
+        "editor",
+        "remote",
+        "portal"
+      ]
+    },
+    {
+      "match": {
+        "make": "Dell Inc.",
+        "model": "DELL P2720D",
+        "serial": "6FCXS03",
+        "description": "Dell Inc. DELL P2720D 6FCXS03",
+        "output": "DP-7"
+      },
+      "label": "DELL P2720D",
+      "enabled": true,
+      "mode": "2560x1440@59.95Hz",
+      "width": 2560,
+      "height": 1440,
+      "x": 4120,
+      "y": 0,
+      "scale": 1.0,
+      "transform": 3,
+      "workspaces": [
+        "slack",
+        "outlook",
+        "teams"
+      ]
+    }
+  ],
+  "parked": [],
+  "numbers": {
+    "terminal": 1,
+    "browser": 2,
+    "editor": 3,
+    "remote": 4,
+    "slack": 5,
+    "portal": 9,
+    "ai": 8,
+    "outlook": 6,
+    "teams": 7,
+    "spotify": 10
+  }
+}

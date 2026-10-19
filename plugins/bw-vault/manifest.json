@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "bw-vault",
+  "name": "Bitwarden Vault",
+  "version": "1.0.0",
+  "author": "Omarchy user",
+  "description": "Opens or closes the Bitwarden CLI vault window.",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Bitwarden Vault",
+    "description": "Open or close the Bitwarden CLI vault window.",
+    "category": "System",
+    "allowMultiple": false
+  }
+}

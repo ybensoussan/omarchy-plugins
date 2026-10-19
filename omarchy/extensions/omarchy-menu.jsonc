@@ -1,0 +1,68 @@
+{
+  // Extend the Quickshell Omarchy menu with JSONC.
+  //
+  // IDs are object keys. The parent is inferred from the dotted id, so
+  // "personal.notes" appears under "personal", and "personal" appears on the
+  // root menu. Reuse an existing id to override/extend it.
+  //
+  // Fields:
+  //   icon        Nerd Font glyph shown in the icon column.
+  //   label       Visible row title.
+  //   action      Shell command to run. If omitted, the row is a submenu.
+  //   target      Existing submenu id to open. Use for links/aliases.
+  //   provider    Runtime provider function/command returning JSON rows.
+  //   aliases     alternate `omarchy menu summon <name>` routes; also searchable.
+  //   description Optional subtitle and extra search text.
+  //   when        Shell condition; hide row when it fails.
+  //   checked     Shell condition; append ✓ when it succeeds.
+  //
+  // Examples:
+  // "personal": {"icon":"","label":"Personal"},
+  // "personal.notes": {"icon":"󰎞","label":"Notes","action":"omarchy-launch-editor ~/notes"},
+  // "personal.files": {"icon":"","label":"Files","action":"uwsm-app -- nautilus ~/Documents"},
+  //
+  // Only use provider when a provider_name function or command named "name"
+  // returns JSON rows. Static submenus only need dotted ids.
+  //
+  // Example: replace the default About action by reusing the same id. Existing
+  // fields are kept unless overridden.
+  // "about": {"icon":"","label":"About","action":"omarchy-launch-or-focus-tui \"zsh -c 'fastfetch; read -k 1'\""},
+
+  // Monitors
+  "trigger.displays": {"icon":"󰍹","label":"Displays & Workspaces","aliases":["monitors","display","displays","arrange monitors","display manager","workspace manager","profiles","workspace profile"],"action":"omarchy-shell shell toggle yonathan.displays ''"},
+  "trigger.monitor-profile": {"icon":"󰍹","label":"Monitor Profile","aliases":["monitor profile","desk","factory office","laptop"]},
+  "trigger.monitor-profile.andere-office": {"icon": "󰍹", "label": "Andere Office", "action": "omarchy-display-profiles apply andere-office"},
+  "trigger.monitor-profile.desk": {"icon": "󰍹", "label": "Desk", "action": "omarchy-display-profiles apply desk"},
+  "trigger.monitor-profile.laptop": {"icon": "󰍹", "label": "Laptop", "action": "omarchy-display-profiles apply laptop"},
+  "trigger.monitor-profile.new-profile": {"icon": "󰍹", "label": "New Profile", "action": "omarchy-display-profiles apply new-profile"},
+  "trigger.monitor-profile.office-4k": {"icon": "󰍹", "label": "Office 4K", "action": "omarchy-display-profiles apply office-4k"},
+  "trigger.monitor-profile.office-corner": {"icon": "󰍹", "label": "Office Corner", "action": "omarchy-display-profiles apply office-corner"},
+  "trigger.monitor-profile.office": {"icon": "󰍹", "label": "Office", "action": "omarchy-display-profiles apply office"},
+
+  // Workspaces
+  "trigger.workspaces": {"icon":"󰙀","label":"Workspaces","aliases":["workspace","switch"]},
+  "trigger.workspaces.terminal": {"icon": "󰙀", "label": "Terminal", "action": "omarchy-workspace-switch terminal"},
+  "trigger.workspaces.browser": {"icon": "󰙀", "label": "Browser", "action": "omarchy-workspace-switch browser"},
+  "trigger.workspaces.editor": {"icon": "󰙀", "label": "Editor", "action": "omarchy-workspace-switch editor"},
+  "trigger.workspaces.remote": {"icon": "󰙀", "label": "Remote", "action": "omarchy-workspace-switch remote"},
+  "trigger.workspaces.slack": {"icon": "󰙀", "label": "Slack", "action": "omarchy-workspace-switch slack"},
+  "trigger.workspaces.outlook": {"icon": "󰙀", "label": "Outlook", "action": "omarchy-workspace-switch outlook"},
+  "trigger.workspaces.teams": {"icon": "󰙀", "label": "Teams", "action": "omarchy-workspace-switch teams"},
+  "trigger.workspaces.ai": {"icon": "󰙀", "label": "Ai", "action": "omarchy-workspace-switch ai"},
+  "trigger.workspaces.portal": {"icon": "󰙀", "label": "Portal", "action": "omarchy-workspace-switch portal"},
+  "trigger.workspaces.spotify": {"icon": "󰙀", "label": "Spotify", "action": "omarchy-workspace-switch spotify"},
+
+  // Move the active window without changing monitor or workspace focus.
+  "trigger.move-window-workspace": {"icon":"󰁌","label":"Move Window To Workspace","aliases":["move-window-workspace","move window","send window"]},
+  "trigger.move-window-workspace.terminal": {"icon": "󰙀", "label": "Terminal", "action": "omarchy-workspace-move-window terminal"},
+  "trigger.move-window-workspace.browser": {"icon": "󰙀", "label": "Browser", "action": "omarchy-workspace-move-window browser"},
+  "trigger.move-window-workspace.editor": {"icon": "󰙀", "label": "Editor", "action": "omarchy-workspace-move-window editor"},
+  "trigger.move-window-workspace.remote": {"icon": "󰙀", "label": "Remote", "action": "omarchy-workspace-move-window remote"},
+  "trigger.move-window-workspace.slack": {"icon": "󰙀", "label": "Slack", "action": "omarchy-workspace-move-window slack"},
+  "trigger.move-window-workspace.outlook": {"icon": "󰙀", "label": "Outlook", "action": "omarchy-workspace-move-window outlook"},
+  "trigger.move-window-workspace.teams": {"icon": "󰙀", "label": "Teams", "action": "omarchy-workspace-move-window teams"},
+  "trigger.move-window-workspace.ai": {"icon": "󰙀", "label": "Ai", "action": "omarchy-workspace-move-window ai"},
+  "trigger.move-window-workspace.portal": {"icon": "󰙀", "label": "Portal", "action": "omarchy-workspace-move-window portal"},
+  "trigger.move-window-workspace.spotify": {"icon": "󰙀", "label": "Spotify", "action": "omarchy-workspace-move-window spotify"},
+  "trigger.move-window-workspace.scratchpad": {"icon":"󰆍","label":"Scratchpad","action":"omarchy-workspace-move-window special:scratchpad"},
+}

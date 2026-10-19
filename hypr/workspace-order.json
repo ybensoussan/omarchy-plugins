@@ -1,0 +1,87 @@
+{
+  "profile": "desk",
+  "order": [
+    8,
+    10,
+    1,
+    2,
+    3,
+    4,
+    9,
+    5,
+    6,
+    7
+  ],
+  "assignments": [
+    {
+      "workspace": "8",
+      "name": "ai",
+      "id": 8,
+      "output": "eDP-1",
+      "source": "ai"
+    },
+    {
+      "workspace": "10",
+      "name": "spotify",
+      "id": 10,
+      "output": "eDP-1",
+      "source": "spotify"
+    },
+    {
+      "workspace": "1",
+      "name": "terminal",
+      "id": 1,
+      "output": "DP-4",
+      "source": "terminal"
+    },
+    {
+      "workspace": "2",
+      "name": "browser",
+      "id": 2,
+      "output": "DP-4",
+      "source": "browser"
+    },
+    {
+      "workspace": "3",
+      "name": "editor",
+      "id": 3,
+      "output": "DP-4",
+      "source": "editor"
+    },
+    {
+      "workspace": "4",
+      "name": "remote",
+      "id": 4,
+      "output": "DP-4",
+      "source": "remote"
+    },
+    {
+      "workspace": "9",
+      "name": "portal",
+      "id": 9,
+      "output": "DP-4",
+      "source": "portal"
+    },
+    {
+      "workspace": "5",
+      "name": "slack",
+      "id": 5,
+      "output": "DP-5",
+      "source": "slack"
+    },
+    {
+      "workspace": "6",
+      "name": "outlook",
+      "id": 6,
+      "output": "DP-5",
+      "source": "outlook"
+    },
+    {
+      "workspace": "7",
+      "name": "teams",
+      "id": 7,
+      "output": "DP-5",
+      "source": "teams"
+    }
+  ]
+}

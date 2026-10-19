@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "yonathan.workspace-launcher",
+  "name": "Workspace Launcher",
+  "version": "1.0.0",
+  "author": "yonathan",
+  "description": "Search open applications and switch to their workspace.",
+  "kinds": ["overlay"],
+  "keepLoaded": true,
+  "entryPoints": {
+    "overlay": "WorkspaceLauncher.qml"
+  }
+}

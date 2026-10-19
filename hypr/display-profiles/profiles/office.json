@@ -1,0 +1,91 @@
+{
+  "version": 2,
+  "name": "office",
+  "auto": true,
+  "monitors": [
+    {
+      "match": {
+        "make": "Sharp Corporation",
+        "model": "LQ150P1JX51",
+        "serial": "0x002223A0",
+        "description": "Sharp Corporation LQ150P1JX51 0x002223A0",
+        "output": "eDP-1"
+      },
+      "label": "Built-in display",
+      "enabled": true,
+      "mode": "2496x1664@59.98Hz",
+      "width": 2496,
+      "height": 1664,
+      "x": 4800,
+      "y": 0,
+      "scale": 1.0,
+      "transform": 0,
+      "workspaces": [
+        "ai"
+      ]
+    },
+    {
+      "match": {
+        "make": "HP Inc.",
+        "model": "HP E27 G5",
+        "serial": "CNC3192C62",
+        "description": "HP Inc. HP E27 G5 CNC3192C62",
+        "output": "DVI-I-1"
+      },
+      "label": "HP E27 G5",
+      "enabled": true,
+      "mode": "1920x1080@60.00Hz",
+      "width": 1920,
+      "height": 1080,
+      "x": 0,
+      "y": 0,
+      "scale": 0.8,
+      "transform": 0,
+      "workspaces": [
+        "slack",
+        "outlook",
+        "teams"
+      ]
+    },
+    {
+      "match": {
+        "make": "HP Inc.",
+        "model": "HP E27 G5",
+        "serial": "CNC3200QDX",
+        "description": "HP Inc. HP E27 G5 CNC3200QDX",
+        "output": "DVI-I-2"
+      },
+      "label": "HP E27 G5",
+      "enabled": true,
+      "mode": "1920x1080@60.00Hz",
+      "width": 1920,
+      "height": 1080,
+      "x": 2400,
+      "y": 0,
+      "scale": 0.8,
+      "transform": 0,
+      "workspaces": [
+        "terminal",
+        "browser",
+        "editor",
+        "remote"
+      ]
+    }
+  ],
+  "parked": [
+    "portal",
+    "spotify"
+  ],
+  "numbers": {
+    "terminal": 1,
+    "browser": 2,
+    "editor": 3,
+    "remote": 4,
+    "slack": 5,
+    "portal": 6,
+    "ai": 7,
+    "outlook": 8,
+    "teams": 9,
+    "spotify": 10
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "yonathan.displays",
+  "name": "Displays & Workspaces",
+  "version": "2.0.0",
+  "author": "yonathan",
+  "description": "Arrange monitors, place and number workspaces, and switch display profiles automatically",
+  "kinds": [
+    "overlay"
+  ],
+  "keepLoaded": false,
+  "entryPoints": {
+    "overlay": "Displays.qml"
+  }
+}

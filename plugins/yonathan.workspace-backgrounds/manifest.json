@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "yonathan.workspace-backgrounds",
+  "name": "Workspace Backgrounds",
+  "version": "1.0.0",
+  "author": "yonathan",
+  "description": "Assign a background image to each workspace",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Workspace Backgrounds",
+    "description": "Assign a background image to each workspace",
+    "category": "Appearance",
+    "allowMultiple": false
+  }
+}
