@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "yonathan.nag",
+  "name": "Disposable Alarms",
+  "version": "1.0.0",
+  "author": "yonathan",
+  "description": "Single-line bar to set throwaway countdown reminders, e.g. 'nag pizza in 15m'.",
+  "kinds": ["overlay"],
+  "keepLoaded": true,
+  "entryPoints": {
+    "overlay": "Nag.qml"
+  }
+}

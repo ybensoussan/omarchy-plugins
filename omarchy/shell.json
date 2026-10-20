@@ -34,6 +34,9 @@
           "verticalFormat": "HH\n—\nmm"
         },
         {
+          "id": "yonathan.next-meeting"
+        },
+        {
           "id": "omarchy.weather"
         },
         {
@@ -86,6 +89,9 @@
     },
     {
       "id": "yonathan.remmina-launcher"
+    },
+    {
+      "id": "yonathan.nag"
     },
     {
       "id": "bw-vault"

@@ -24,6 +24,8 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
 | `yonathan.workspace-backgrounds` | bar widget (Appearance) | Assign a background image to each workspace. The panel stores the mapping in a state file and applies it with `omarchy-theme-bg-set`; images are picked via `omarchy-theme-bg-switcher`. |
 | `yonathan.remmina-launcher` | overlay (kept loaded) | Searchable launcher over saved Remmina connections; selecting one opens it. Opened with `SUPER+R`; floated and centered by a window rule in `hyprland.lua`. |
 | `yonathan.workspace-launcher` | overlay (kept loaded) | Searchable launcher over open windows and applications; selecting one switches to its workspace. Opened with `SUPER+N`. |
+| `yonathan.next-meeting` | bar widget (Productivity) | Shows the next meeting today with a countdown (hidden when none is left) and opens its Teams link in the Teams PWA on click. `next-meeting.py` reads a published Outlook ICS URL from `~/.config/omarchy/next-meeting.url` (not in the repo; must be published with "Can view all details"). Setup: `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt` inside the plugin dir. |
+| `yonathan.nag` | overlay (kept loaded) | Single-line bar for throwaway reminders, e.g. `nag pizza in 15m`, `tea 1h30m`, `call mom at 14:30`. Hands off to `omarchy reminder`. Opened with `SUPER+SHIFT+P`; floated and centered by a window rule in `hyprland.lua`. |
 
 ## Omarchy settings (`omarchy/`)
 
@@ -32,9 +34,9 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
   - `idle`: screensaver after 150 s, lock after 300 s.
   - `bar`: top position, opaque, centered on `omarchy.clock`.
     - Left: Omarchy menu, `yonathan.workspaces`, `yonathan.workspace-backgrounds`.
-    - Center: keyboard layout, indicators, clock (`dddd HH:mm`, alt format `d MMMM 'W'ww yyyy`), weather, system update.
+    - Center: keyboard layout, indicators, clock (`dddd HH:mm`, alt format `d MMMM 'W'ww yyyy`), `yonathan.next-meeting`, weather, system update.
     - Right: `yonathan.monitor-profile`, `yonathan.tray`, `bw-vault`, notification center, tailscale, agents, bluetooth, network, monitor, audio, power.
-  - `plugins`: loaded plugins (`yonathan.displays`, `yonathan.workspace-launcher`, `yonathan.remmina-launcher`, `bw-vault`).
+  - `plugins`: loaded plugins (`yonathan.displays`, `yonathan.workspace-launcher`, `yonathan.remmina-launcher`, `yonathan.nag`, `bw-vault`).
 - **`extensions/omarchy-menu.jsonc`**: adds to the Omarchy menu (`omarchy menu summon <name>`):
   - `trigger.displays`: open Displays & Workspaces.
   - `trigger.monitor-profile.*`: apply a display profile (`omarchy-display-profiles apply <name>`).
@@ -60,6 +62,7 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
   | `SUPER+SHIFT+N` | Displays & Workspaces manager |
   | `SUPER+SHIFT+ALT+arrows` | Move window to the workspace on the monitor in that direction |
   | `SUPER+R` | Remmina launcher (`yonathan.remmina-launcher` plugin) |
+  | `SUPER+SHIFT+P` | Disposable alarm (`yonathan.nag` plugin) |
 - **`autostart.lua`**: starts `omarchy-display-profiles watch` (auto-switch profile on monitor changes), launches the daily apps (opencode, Zen, Zed, Remmina, Slack, Chromium web apps) and uses window rules to place each on its workspace. Also points `SSH_AUTH_SOCK` at the systemd user `ssh-agent.socket`.
 - **`workspace-profile.lua`**: *generated* by `omarchy-display-profiles` for the active profile. Don't edit by hand; use the Displays & Workspaces manager.
 - **`workspace-order.json`**: generated workspace order and workspace-to-monitor assignments for the active profile.

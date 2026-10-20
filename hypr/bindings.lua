@@ -57,3 +57,9 @@ hl.unbind("SUPER + R")
 o.bind("SUPER + R", "Remmina launcher", function()
   hl.exec_cmd("omarchy-shell -q yonathan.remmina-launcher toggle")
 end)
+
+-- Disposable alarms: "nag pizza in 15m" (~/.config/omarchy/plugins/yonathan.nag).
+hl.unbind("SUPER + SHIFT + P")
+o.bind("SUPER + SHIFT + P", "Disposable alarm", function()
+  hl.exec_cmd("omarchy-shell -q yonathan.nag toggle")
+end)

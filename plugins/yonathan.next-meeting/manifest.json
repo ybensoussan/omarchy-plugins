@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "yonathan.next-meeting",
+  "name": "Next Meeting",
+  "version": "1.0.0",
+  "author": "yonathan",
+  "description": "Countdown to your next calendar meeting with a one-click Teams PWA launcher.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "BarWidget.qml" },
+  "barWidget": {
+    "displayName": "Next Meeting",
+    "description": "Countdown to your next meeting; click to join in the Teams PWA.",
+    "category": "Productivity",
+    "allowMultiple": false
+  }
+}
