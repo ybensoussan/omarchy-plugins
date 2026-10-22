@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+state_dir="${XDG_RUNTIME_DIR:-/tmp}"
+pid_file="$state_dir/bw-vault.pid"
+session_file="$state_dir/bw-vault.session"
+index_file="$state_dir/bw-vault.index"
+printf '%s\n' "$$" > "$pid_file"
+trap 'rm -f "$pid_file"' EXIT
+
+hide_window() {
+  hyprctl dispatch movetoworkspacesilent special:bw-vault >/dev/null
+}
+
+if [[ -r "$session_file" ]]; then
+  export BW_SESSION="$(<"$session_file")"
+elif [[ -z "${BW_SESSION:-}" ]]; then
+  export BW_SESSION="$(bw unlock --raw)"
+  umask 077
+  printf '%s\n' "$BW_SESSION" > "$session_file"
+fi
+
+extra_binds=()
+if [[ ! -s "$index_file" ]]; then
+  BW_VAULT_NO_SYNC=1 bw-vault-reload >/dev/null
+  extra_binds=(--bind='start:reload(bw-vault-reload)' --header='syncing... (ctrl-r: sync)')
+fi
+
+while true; do
+  item="$(FZF_DEFAULT_COMMAND="cat '$index_file'" fzf --delimiter=$'\t' --with-nth=1,2 --prompt='Vault > ' --header='ctrl-r: sync' --height=100% --reverse --bind='up:up,down:down,ctrl-j:down,ctrl-k:up' --bind='ctrl-r:reload(bw-vault-reload)' "${extra_binds[@]}")" || exit 0
+  extra_binds=()
+  name="${item%%$'\t'*}"
+  remainder="${item#*$'\t'}"
+  username="${remainder%%$'\t'*}"
+  remainder="${remainder#*$'\t'}"
+  password="${remainder%%$'\t'*}"
+  id="${remainder##*$'\t'}"
+
+  action="$(FZF_DEFAULT_COMMAND="printf '%s\\n' 'Copy password' 'Copy username' 'Show details' 'Exit vault'" fzf --prompt="$name > " --height=40% --reverse --bind='up:up,down:down,ctrl-j:down,ctrl-k:up')" || continue
+  case "$action" in
+    'Copy password') printf '%s' "$password" | wl-copy; hide_window ;;
+    'Copy username') printf '%s' "$username" | wl-copy; hide_window ;;
+    'Show details') bw get item "$id" | jq -r '"Username: " + (.login.username // "") + "\nPassword: " + (.login.password // "") + "\n\n" + (.notes // "")' | less ;;
+    'Exit vault') exit 0 ;;
+  esac
+done

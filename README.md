@@ -77,7 +77,7 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
 
 | Path | Install location | Description |
 |------|------------------|-------------|
-| `bin/bw-vault-toggle`, `bin/bw-vault-exit` | `~/.local/bin/` | Open/close the Bitwarden vault window; exit locks the vault. |
+| `bin/bw-vault`, `bin/bw-vault-reload`, `bin/bw-vault-toggle`, `bin/bw-vault-exit` | `~/.local/bin/` | The fzf vault picker, its sync/reload helper, and open/close of the window; exit locks the vault. Opening uses a cached index in `$XDG_RUNTIME_DIR`; `ctrl-r` runs `bw sync` and reloads. On first start after a reboot it lists from the local cache and syncs in the background. |
 | `bin/omarchy-display-profiles` | `~/.local/bin/` | Applies/watches display profiles and generates `workspace-profile.lua`. |
 | `bin/omarchy-workspace-switch`, `bin/omarchy-workspace-move-window` | `~/.local/bin/` | Switch to / move a window to a named workspace. |
 | `bin/wait-for-notifications` | `~/.local/bin/` | Waits for the notification service before launching an app (used in autostart). |

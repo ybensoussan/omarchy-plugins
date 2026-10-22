@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+state_dir="${XDG_RUNTIME_DIR:-/tmp}"
+index_file="$state_dir/bw-vault.index"
+[[ -n "${BW_VAULT_NO_SYNC:-}" ]] || bw sync >/dev/null 2>&1 || true
+umask 077
+tmp="$(mktemp "$state_dir/bw-vault.index.XXXXXX")"
+if bw list items | jq -r '.[] | select(.login != null) | [.name, (.login.username // ""), (.login.password // ""), .id] | @tsv' > "$tmp" && [[ -s "$tmp" ]]; then
+  mv "$tmp" "$index_file"
+  cat "$index_file"
+else
+  rm -f "$tmp"
+  cat "$index_file" 2>/dev/null
+fi
