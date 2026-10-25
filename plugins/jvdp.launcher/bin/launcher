@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+"""Launcher backend.
+
+  launcher serve           talk to the overlay (JSON lines on stdin/stdout)
+  launcher query TEXT      print what a search finds (for testing)
+  launcher open [TEXT]     open the launcher, optionally with a search
+
+Settings: ~/.config/omarchy/omarchy-launcher.json
+Script commands: ~/.config/omarchy/launcher/commands/
+"""
+
+import json
+import os
+import subprocess
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
+from launcher.server import Server  # noqa: E402
+
+
+def own_session():
+    """Lead a session of our own for as long as the backend runs.
+
+    1Password authorizes op per session. Started from the shell, the backend
+    would share a session whose leader is gone, which op rejects; a fresh
+    session per call (setsid op) works but forgets the authorization each
+    time. One long-lived session lets every op call share it, like a terminal.
+    """
+    if os.getsid(0) == os.getpid():
+        return
+    try:
+        os.setsid()
+    except PermissionError:
+        # Already a process-group leader: let setsid(1) start us in a new one.
+        os.execvp("setsid", ["setsid", "-w", sys.executable, os.path.realpath(__file__), "serve"])
+
+
+def main(argv):
+    cmd = argv[1] if len(argv) > 1 else "serve"
+    if cmd == "serve":
+        own_session()
+        Server().serve()
+    elif cmd == "query":
+        import io
+        import time
+        buf = io.StringIO()
+        server = Server(out=buf)
+        server.refresh_all(wait=True)
+        server.query(1, " ".join(argv[2:]))
+        time.sleep(float(os.environ.get("LAUNCHER_WAIT", "1.5")))
+        last = None
+        for line in buf.getvalue().splitlines():
+            msg = json.loads(line)
+            if msg.get("op") == "results" and msg.get("seq") == 1:
+                last = msg
+        for it in (last or {}).get("items", [])[:25]:
+            print(f"{it['score']:>7.0f}  {it['title'][:60]:<60}  {it.get('accessory', '')}")
+    elif cmd == "open":
+        payload = json.dumps({"query": " ".join(argv[2:])}) if len(argv) > 2 else "{}"
+        subprocess.run(["omarchy-shell", "shell", "summon", "jvdp.launcher", payload])
+    else:
+        print(__doc__.strip())
+        return 0 if cmd in ("-h", "--help", "help") else 2
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main(sys.argv))
+    except (KeyboardInterrupt, BrokenPipeError):
+        sys.exit(0)
