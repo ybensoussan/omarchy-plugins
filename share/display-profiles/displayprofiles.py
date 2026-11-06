@@ -1276,7 +1276,25 @@ def cmd_watch(hypr):
         raise UserError("HYPRLAND_INSTANCE_SIGNATURE is not set.")
     path = "%s/hypr/%s/.socket2.sock" % (runtime, signature)
 
+    def source_mtime():
+        try:
+            return os.stat(os.path.abspath(__file__)).st_mtime
+        except OSError:
+            return None
+    started_mtime = source_mtime()
+
     def run_sync(reason, force=False):
+        # A long-running watcher would otherwise keep applying profiles with the code it
+        # started with after the backend is updated; restart into the new code instead.
+        if source_mtime() != started_mtime:
+            try:
+                compile(Path(__file__).read_text(), __file__, "exec")
+            except (OSError, SyntaxError) as error:
+                print("backend changed but does not compile, keeping the running one: %s" % error,
+                      file=sys.stderr, flush=True)
+            else:
+                print("backend changed, restarting watcher", file=sys.stderr, flush=True)
+                os.execv(sys.executable, [sys.executable, os.path.abspath(__file__), "watch"])
         try:
             wait_for_stable_monitors(hypr)
             print(json.dumps(sync(hypr, reason, force)), flush=True)
