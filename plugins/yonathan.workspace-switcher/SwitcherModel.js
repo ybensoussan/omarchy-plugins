@@ -138,8 +138,27 @@ function firstMatch(columns, sel, query) {
 
 // Move the cursor by dx columns or dy rows, over matching tiles only. Up and down wrap
 // within a column; left and right skip columns without a match and keep the row near.
-function step(columns, sel, dx, dy, query) {
+// With perRow > 1 a column's tiles sit in a grid read left to right: left and right step
+// one tile, up and down one grid row, and left/right only leave the column at its edges.
+function step(columns, sel, dx, dy, query, perRow) {
   if (!columns.length) return sel
+  perRow = perRow > 1 ? perRow : 1
+  if (perRow > 1) {
+    var cells = matchingRows(columns[sel.col], query)
+    var pos = cells.indexOf(sel.row)
+    if (cells.length && pos >= 0) {
+      if (dy) {
+        var target = pos + dy * perRow
+        if (target >= 0 && target < cells.length) return { col: sel.col, row: cells[target] }
+        return sel
+      }
+      if (dx) {
+        var next = pos + dx
+        var sameRow = Math.floor(next / perRow) === Math.floor(pos / perRow)
+        if (next >= 0 && next < cells.length && sameRow) return { col: sel.col, row: cells[next] }
+      }
+    }
+  }
   if (dy) {
     var rows = matchingRows(columns[sel.col], query)
     if (!rows.length) return sel

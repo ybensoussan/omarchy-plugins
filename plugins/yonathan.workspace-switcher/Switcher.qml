@@ -39,6 +39,8 @@ Item {
   readonly property int tileHeight: Style.space(72)
   readonly property int tileGap: Style.space(6)
   readonly property int iconSize: Style.space(22)
+  // A single monitor lays its tiles out two per row, so the card isn't a tall narrow strip.
+  readonly property int tilesPerRow: columns.length === 1 ? 2 : 1
   // Hover only selects once the pointer moves, so a resting pointer can't steal the cursor on open.
   property bool pointerMoved: false
 
@@ -157,7 +159,7 @@ Item {
     BorderSurface {
       id: card
       anchors.centerIn: parent
-      width: Math.max(Style.space(420), Math.max(1, root.columns.length) * (root.colWidth + root.colGap) - root.colGap + 2 * padding)
+      width: Math.max(Style.space(640), header.minWidth, monitorsRow.implicitWidth, hints.implicitWidth) + 2 * padding
       height: content.implicitHeight + 2 * padding
       radius: Style.cornerRadius
       color: root.background
@@ -177,10 +179,10 @@ Item {
           var shift = event.modifiers & Qt.ShiftModifier
           switch (event.key) {
           case Qt.Key_Escape: root.close(); break
-          case Qt.Key_Up: root.select(M.step(root.columns, root.sel, 0, -1, root.query)); break
-          case Qt.Key_Down: root.select(M.step(root.columns, root.sel, 0, 1, root.query)); break
-          case Qt.Key_Left: root.select(M.step(root.columns, root.sel, -1, 0, root.query)); break
-          case Qt.Key_Right: root.select(M.step(root.columns, root.sel, 1, 0, root.query)); break
+          case Qt.Key_Up: root.select(M.step(root.columns, root.sel, 0, -1, root.query, root.tilesPerRow)); break
+          case Qt.Key_Down: root.select(M.step(root.columns, root.sel, 0, 1, root.query, root.tilesPerRow)); break
+          case Qt.Key_Left: root.select(M.step(root.columns, root.sel, -1, 0, root.query, root.tilesPerRow)); break
+          case Qt.Key_Right: root.select(M.step(root.columns, root.sel, 1, 0, root.query, root.tilesPerRow)); break
           case Qt.Key_Tab: root.select(M.step(root.columns, root.sel, 0, 1, root.query)); break
           case Qt.Key_Backtab: root.select(M.step(root.columns, root.sel, 0, -1, root.query)); break
           case Qt.Key_Return:
@@ -205,6 +207,10 @@ Item {
 
         // ---------- header: mode, the window being moved, search ----------
         Item {
+          id: header
+          // Title and search side by side, plus room for the window chip when moving.
+          readonly property real minWidth: modeRow.implicitWidth + search.width + Style.space(24)
+                                           + (root.moving ? Style.space(260) : 0)
           width: parent.width
           height: Style.space(40)
 
@@ -307,6 +313,8 @@ Item {
 
         // ---------- monitors ----------
         Row {
+          id: monitorsRow
+          anchors.horizontalCenter: parent.horizontalCenter
           spacing: root.colGap
 
           Repeater {
@@ -318,7 +326,7 @@ Item {
               required property int index
               readonly property color hue: root.hueColor(modelData.index)
 
-              width: root.colWidth
+              width: root.colWidth * root.tilesPerRow + root.tileGap * (root.tilesPerRow - 1)
               height: columnContent.implicitHeight + Style.space(12)
               radius: Math.max(Style.cornerRadius, 8)
               color: Qt.alpha(column.hue, 0.05)
@@ -385,6 +393,13 @@ Item {
                   }
                 }
 
+                Grid {
+                  id: tileGrid
+                  width: parent.width
+                  columns: root.tilesPerRow
+                  columnSpacing: root.tileGap
+                  rowSpacing: root.tileGap
+
                 Repeater {
                   model: column.modelData.tiles
 
@@ -396,7 +411,7 @@ Item {
                     readonly property bool match: M.matches(modelData, column.modelData, root.query)
                     readonly property var apps: root.uniqueApps(modelData.apps)
 
-                    width: columnContent.width
+                    width: (tileGrid.width - root.tileGap * (root.tilesPerRow - 1)) / root.tilesPerRow
                     height: root.tileHeight
                     radius: Math.max(Style.cornerRadius, 7)
                     opacity: match ? 1 : 0.22
@@ -519,6 +534,8 @@ Item {
                   }
                 }
 
+                }
+
                 Text {
                   visible: column.modelData.tiles.length === 0
                   width: parent.width
@@ -534,6 +551,7 @@ Item {
 
         // ---------- key hints ----------
         Row {
+          id: hints
           anchors.horizontalCenter: parent.horizontalCenter
           spacing: Style.space(18)
           Repeater {

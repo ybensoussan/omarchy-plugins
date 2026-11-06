@@ -87,3 +87,15 @@ test("digits pick that slot in the cursor's column", () => {
   assert.deepEqual(plain(M.slotInColumn(cols, { col: 1, row: 0 }, 7)), { col: 1, row: 3 })
   assert.equal(M.slotInColumn(cols, { col: 1, row: 0 }, 5), null)
 })
+
+test("single monitor grid: left/right step a tile, up/down a grid row", () => {
+  // DP-6 alone: tiles 1, 2, 3, 7 laid out two per row -> [1 2] [3 7]
+  const cols = M.buildColumns(order, blocks, [], [monitors[1]])
+  assert.equal(cols.length, 1)
+  assert.deepEqual(plain(M.step(cols, { col: 0, row: 0 }, 1, 0, "", 2)), { col: 0, row: 1 })
+  assert.deepEqual(plain(M.step(cols, { col: 0, row: 1 }, 1, 0, "", 2)), { col: 0, row: 1 })   // right edge
+  assert.deepEqual(plain(M.step(cols, { col: 0, row: 1 }, 0, 1, "", 2)), { col: 0, row: 3 })
+  assert.deepEqual(plain(M.step(cols, { col: 0, row: 3 }, 0, 1, "", 2)), { col: 0, row: 3 })   // bottom
+  assert.deepEqual(plain(M.step(cols, { col: 0, row: 2 }, 0, -1, "", 2)), { col: 0, row: 0 })
+  assert.deepEqual(plain(M.step(cols, { col: 0, row: 2 }, -1, 0, "", 2)), { col: 0, row: 2 })  // left edge
+})
