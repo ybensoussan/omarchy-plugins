@@ -561,9 +561,15 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 3
                 Row {
+                  width: parent.width
                   spacing: 6
-                  Text { text: root.title(prow.modelData.name); color: root.fg; font.family: root.font; font.pixelSize: Style.font.title; font.bold: prow.selected }
+                  Text {
+                    width: Math.min(implicitWidth, parent.width - (activeBadge.visible ? activeBadge.width + parent.spacing : 0))
+                    elide: Text.ElideRight
+                    text: root.title(prow.modelData.name); color: root.fg; font.family: root.font; font.pixelSize: Style.font.title; font.bold: prow.selected
+                  }
                   Rectangle {
+                    id: activeBadge
                     visible: prow.isActive; radius: 4; height: 16; width: activeText.implicitWidth + 10
                     color: Qt.alpha(root.accent, 0.3); anchors.verticalCenter: parent.verticalCenter
                     Text { id: activeText; anchors.centerIn: parent; text: "ACTIVE"; color: root.fg; font.family: root.font; font.pixelSize: Style.font.caption - 1; font.bold: true }
