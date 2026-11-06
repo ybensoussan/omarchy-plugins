@@ -5,6 +5,9 @@
     {
       "output": "eDP-1",
       "label": "Built-in display",
+      "short": "Laptop",
+      "index": 0,
+      "portrait": false,
       "block": 0,
       "slots": [
         {
@@ -72,6 +75,9 @@
     {
       "output": "DP-6",
       "label": "DELL P2720DC",
+      "short": "Middle",
+      "index": 1,
+      "portrait": false,
       "block": 1,
       "slots": [
         {
@@ -139,6 +145,9 @@
     {
       "output": "DP-7",
       "label": "DELL P2720D",
+      "short": "Right",
+      "index": 2,
+      "portrait": true,
       "block": 2,
       "slots": [
         {

@@ -240,6 +240,9 @@ class PlanTests(Base):
         self.assertEqual([m["output"] for m in order["monitors"]], ["eDP-1", "DP-6", "DP-7"])
         dp6 = order["monitors"][1]
         self.assertEqual(dp6["block"], 1)
+        self.assertEqual((dp6["short"], dp6["index"], dp6["portrait"]), ("Middle", 1, False))
+        self.assertEqual([m["short"] for m in order["monitors"]], ["Laptop", "Middle", "Right"])
+        self.assertTrue(order["monitors"][2]["portrait"])
         self.assertEqual(dp6["slots"][0], {"slot": 1, "name": "terminal", "hidden": False, "id": 11})
         self.assertEqual(dp6["slots"][9], {"slot": 10, "name": "", "hidden": True, "id": 20})
         self.assertEqual(len(order["assignments"]), 30)

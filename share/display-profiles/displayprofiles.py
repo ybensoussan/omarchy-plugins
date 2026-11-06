@@ -561,6 +561,21 @@ def slot_key(slot):
     return "0" if slot == SLOTS else str(slot)
 
 
+def short_names(outputs):
+    """Short monitor names for menus and the switcher, from connectors in left-to-right order:
+    Laptop for the built-in panel, otherwise the position (Left / Middle / Right, or Screen N)."""
+    positions = {2: ["Left", "Right"], 3: ["Left", "Middle", "Right"]}.get(len(outputs))
+    names = {}
+    for index, output in enumerate(outputs):
+        if is_internal(output):
+            names[output] = "Laptop"
+        elif len(outputs) == 1:
+            names[output] = "Screen"
+        else:
+            names[output] = positions[index] if positions else "Screen %d" % (index + 1)
+    return names
+
+
 def plan(profile, catalog, live_monitors, blocks=None):
     """Work out monitor rules and, for every usable monitor, its ten workspace slots.
 
@@ -607,7 +622,8 @@ def plan(profile, catalog, live_monitors, blocks=None):
         if not output:
             continue
         block = blocks.get(output)
-        entry = {"output": output, "label": saved["label"], "block": block, "slots": []}
+        entry = {"output": output, "label": saved["label"], "block": block, "index": i,
+                 "portrait": saved["transform"] % 2 == 1, "slots": []}
         for index, slot in enumerate(saved["slots"]):
             number = index + 1
             target = {"slot": number, "key": slot_key(number), "name": slot["name"], "hidden": slot["hidden"],
@@ -616,6 +632,9 @@ def plan(profile, catalog, live_monitors, blocks=None):
             entry["slots"].append(target)
             targets.append(target)
         monitors.append(entry)
+    short = short_names([m["output"] for m in monitors])
+    for m in monitors:
+        m["short"] = short[m["output"]]
 
     apps = []
     entries = {w["name"].lower(): w for w in catalog["workspaces"]}
@@ -680,7 +699,8 @@ def order_document(the_plan):
     return {
         "version": 3,
         "profile": the_plan["profile"],
-        "monitors": [{"output": m["output"], "label": m["label"], "block": m["block"],
+        "monitors": [{"output": m["output"], "label": m["label"], "short": m["short"], "index": m["index"],
+                      "portrait": m["portrait"], "block": m["block"],
                       "slots": [slot(t) for t in m["slots"]]} for m in the_plan["monitors"]],
         "assignments": [{"id": t["id"], "slot": t["slot"], "name": t["name"], "hidden": t["hidden"],
                          "output": t["output"], "label": t["label"]} for t in the_plan["targets"]],
@@ -725,18 +745,9 @@ def sync_menu(the_plan, profiles):
         return
     lines = MENU.read_text().splitlines()
     visible = [t for t in the_plan["targets"] if not t["hidden"]]
-    # The menu shows descriptions only while searching and its card is narrow, so a short
-    # monitor name goes in the label: Laptop for the built-in panel, otherwise the position.
-    order = the_plan["monitors"]  # already left to right
-    positions = {2: ["Left", "Right"], 3: ["Left", "Middle", "Right"]}.get(len(order))
-    short = {}
-    for index, m in enumerate(order):
-        if is_internal(m["output"]):
-            short[m["output"]] = "Laptop"
-        elif len(order) == 1:
-            short[m["output"]] = "Screen"
-        else:
-            short[m["output"]] = positions[index] if positions else "Screen %d" % (index + 1)
+    # The menu shows descriptions only while searching and its card is narrow, so the
+    # monitor's short name goes in the label.
+    short = {m["output"]: m["short"] for m in the_plan["monitors"]}
 
     def monitor_name(t):
         return short.get(t["output"], t["output"])

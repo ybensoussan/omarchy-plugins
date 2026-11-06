@@ -21,6 +21,7 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
 | `yonathan.displays` | overlay | "Displays & Workspaces" manager. Arrange monitors, name each monitor's own workspaces 1-0 and show/hide them in the bar and menus, and switch display profiles automatically. Built on Omarchy 4.5's per-monitor workspaces (every monitor has its own 1-10; `SUPER+N` is slot N on the focused monitor). Names and visibility are per profile; app rules belong to a workspace name and apply in every profile using it. Logic lives in `Logic.js` (with tests in `tests/`); the backend is `share/display-profiles/`. Opened with `SUPER+SHIFT+N` or the `trigger.displays` menu entry. |
 | `yonathan.monitor-profile` | bar widget (System) | Shows the active monitor/workspace profile (e.g. `desk`) in the bar. |
 | `yonathan.tray` | bar widget (Status) | Custom system tray (status notifier items), cloned from `omarchy.tray`. |
+| `yonathan.workspace-switcher` | overlay (kept loaded) | Workspace switcher and window mover over every connected monitor: one column per monitor (left to right, in its Displays & Workspaces colour) with its visible workspaces as tiles showing the Super+N key, name and icons of the open windows; the workspace each monitor shows and the focused one are marked. Type to filter by name, app or monitor; arrows move, 1-0 picks that slot on the current monitor, Enter does the action and Shift+Enter the other one (switch ↔ bring the focused window). Opened with `SUPER+M` / `ALT+SPACE` (switch) and `SUPER+SHIFT+M` (move). Logic in `SwitcherModel.js` (tests in `tests/`). |
 | `yonathan.workspaces` | bar widget (Compositor) | Workspace indicators, cloned from `omarchy.workspaces`. Each bar shows its own monitor's visible workspaces, named from `hypr/workspace-order.json`; hidden ones never show. Ids come from Omarchy's per-monitor blocks (`~/.local/state/omarchy/monitor-workspaces`). Logic in `WorkspaceOrder.js` (tests in `tests/`). |
 | `yonathan.workspace-backgrounds` | bar widget (Appearance) | Assign a background image to each workspace. The panel stores the mapping in a state file and applies it with `omarchy-theme-bg-set`; images are picked via `omarchy-theme-bg-switcher`. |
 | `yonathan.remmina-launcher` | overlay (kept loaded) | Searchable launcher over saved Remmina connections; selecting one opens it. Opened with `SUPER+R`; floated and centered by a window rule in `hyprland.lua`. |
@@ -58,8 +59,8 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
   | Key | Action |
   |-----|--------|
   | `SUPER+B` | Toggle Bitwarden vault (`bw-vault-toggle`) |
-  | `ALT+SPACE`, `SUPER+M` | Workspace switcher menu |
-  | `SUPER+SHIFT+M` | Move window to workspace menu (replaces Spotify) |
+  | `ALT+SPACE`, `SUPER+M` | Workspace switcher (`yonathan.workspace-switcher` plugin) |
+  | `SUPER+SHIFT+M` | Move window to a workspace (`yonathan.workspace-switcher` plugin; replaces Spotify) |
   | `SUPER+N` | Workspace launcher plugin |
   | `SUPER+SHIFT+N` | Displays & Workspaces manager |
   | `SUPER+SHIFT+ALT+arrows` | Move window to the workspace on the monitor in that direction |

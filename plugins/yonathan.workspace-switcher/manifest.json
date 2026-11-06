@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "yonathan.workspace-switcher",
+  "name": "Workspace Switcher",
+  "version": "1.0.0",
+  "author": "yonathan",
+  "description": "Switch to, or move the focused window to, any visible workspace on any monitor.",
+  "kinds": ["overlay"],
+  "keepLoaded": true,
+  "entryPoints": {
+    "overlay": "Switcher.qml"
+  }
+}

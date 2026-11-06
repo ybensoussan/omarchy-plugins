@@ -25,13 +25,16 @@ o.bind("SUPER + B", "Bitwarden vault", "bw-vault-toggle")
 -- Disable a default binding without replacing it.
 -- hl.unbind("SUPER + SHIFT + B")
 
--- Workspace switcher
-o.bind("ALT + SPACE", "Workspace switcher", "omarchy menu summon workspace")
-o.bind("SUPER + M", "Workspace switcher", "omarchy menu summon workspace")
+-- Workspace switcher (~/.config/omarchy/plugins/yonathan.workspace-switcher): every monitor's
+-- visible workspaces; Enter does the action, Shift+Enter the other one.
+hl.unbind("ALT + SPACE")
+hl.unbind("SUPER + M")
+o.bind("ALT + SPACE", "Workspace switcher", "omarchy-shell shell toggle yonathan.workspace-switcher switch")
+o.bind("SUPER + M", "Workspace switcher", "omarchy-shell shell toggle yonathan.workspace-switcher switch")
 -- Replace the default Spotify launcher with the workspace mover.
 hl.unbind("SUPER + SHIFT + M")
 hl.unbind("SUPER + CTRL + M")
-o.bind("SUPER + SHIFT + M", "Move window to workspace", "omarchy menu summon move-window-workspace")
+o.bind("SUPER + SHIFT + M", "Move window to workspace", "omarchy-shell shell toggle yonathan.workspace-switcher move")
 
 hl.unbind("SUPER + N")
 o.bind("SUPER + N", "Workspace launcher", function()
