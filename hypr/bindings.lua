@@ -37,9 +37,7 @@ hl.unbind("SUPER + CTRL + M")
 o.bind("SUPER + SHIFT + M", "Move window to workspace", "omarchy-shell shell toggle yonathan.workspace-switcher move")
 
 hl.unbind("SUPER + N")
-o.bind("SUPER + N", "Workspace launcher", function()
-  hl.exec_cmd("omarchy-shell -q yonathan.workspace-launcher show")
-end)
+o.bind("SUPER + N", "Launcher", "omarchy-shell shell toggle jvdp.launcher")
 -- Override Omarchy's editor launcher on this shortcut.
 hl.unbind("SUPER + SHIFT + N")
 o.bind("SUPER + SHIFT + N", "Display & workspace manager", "omarchy-shell shell toggle yonathan.displays ''")

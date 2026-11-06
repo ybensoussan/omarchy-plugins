@@ -51,6 +51,11 @@ Item {
     }
   }
 
+  function isLastFocusable(i) {
+    for (var j = i + 1; j < fields.length; j++) if (focusable(j)) return false
+    return true
+  }
+
   function submit() {
     if (!form) return
     launcher.send({ op: "submit", form: form.id, values: values })
@@ -81,8 +86,10 @@ Item {
     if (!multiline && event.key === Qt.Key_Down) { move(1); return true }
     if (!multiline && event.key === Qt.Key_Up) { move(-1); return true }
     if (!multiline && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) {
-      if (f.type === "text" || f.type === "number" || f.type === "password") move(1)
-      else activate(f)
+      if (f.type === "text" || f.type === "number" || f.type === "password") {
+        if (isLastFocusable(cursor)) submit()
+        else move(1)
+      } else activate(f)
       return true
     }
     if (f.type === "choice" && (event.key === Qt.Key_Left || event.key === Qt.Key_Right)) {

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 
 from . import Provider, action, close, item, toast
@@ -209,5 +210,9 @@ class OmarchyMenu(Provider):
             util.spawn(["omarchy-shell", "shell", "summon", "omarchy.menu", payload])
             return [close()]
         # Menu actions are shell lines from Omarchy's (or the user's) own config.
-        util.spawn_shell(it["_action"])
+        command = it["_action"]
+        if re.search(r"capture|screenshot|screenrecord", command):
+            # Let the overlay disappear before anything is captured.
+            command = "sleep 0.4; " + command
+        util.spawn_shell(command)
         return [close()]

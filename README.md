@@ -25,7 +25,6 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
 | `yonathan.workspaces` | bar widget (Compositor) | Workspace indicators, cloned from `omarchy.workspaces`. Each bar shows its own monitor's visible workspaces, named from `hypr/workspace-order.json`; hidden ones never show. Ids come from Omarchy's per-monitor blocks (`~/.local/state/omarchy/monitor-workspaces`). Logic in `WorkspaceOrder.js` (tests in `tests/`). |
 | `yonathan.workspace-backgrounds` | bar widget (Appearance) | Assign a background image to each workspace. The panel stores the mapping in a state file and applies it with `omarchy-theme-bg-set`; images are picked via `omarchy-theme-bg-switcher`. |
 | `yonathan.remmina-launcher` | overlay (kept loaded) | Searchable launcher over saved Remmina connections; selecting one opens it. Opened with `SUPER+R`; floated and centered by a window rule in `hyprland.lua`. |
-| `yonathan.workspace-launcher` | overlay (kept loaded) | Searchable launcher over open windows and applications; selecting one switches to its workspace. Opened with `SUPER+N`. |
 | `yonathan.next-meeting` | bar widget (Productivity) | Shows the next meeting today with a countdown (hidden when none is left) and opens its Teams link in the Teams PWA on click. `next-meeting.py` reads a published Outlook ICS URL from `~/.config/omarchy/next-meeting.url` (not in the repo; must be published with "Can view all details"). Setup: `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt` inside the plugin dir. |
 | `jvdp.launcher` | menu (kept loaded) | Third-party all-in-one launcher by jvdp ([jvdp11/omarchy-launcher](https://github.com/jvdp11/omarchy-launcher)): apps, Omarchy commands, files, calculator, clipboard, emoji, snippets, quicklinks and more, with a Python backend. Vendored here as a copy. Toggle with `omarchy-shell shell toggle jvdp.launcher`. |
 | `yonathan.nag` | overlay (kept loaded) | Single-line bar for throwaway reminders, e.g. `nag pizza in 15m`, `tea 1h30m`, `call mom at 14:30`. Hands off to `omarchy reminder`. Opened with `SUPER+SHIFT+P`; floated and centered by a window rule in `hyprland.lua`. |
@@ -39,7 +38,7 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
     - Left: Omarchy menu, `yonathan.workspaces`, `yonathan.workspace-backgrounds`.
     - Center: keyboard layout, indicators, clock (`dddd HH:mm`, alt format `d MMMM 'W'ww yyyy`), `yonathan.next-meeting`, weather, system update.
     - Right: `yonathan.monitor-profile`, `yonathan.tray`, `bw-vault`, notification center, tailscale, agents, bluetooth, network, monitor, audio, power.
-  - `plugins`: loaded plugins (`yonathan.displays`, `yonathan.workspace-launcher`, `yonathan.remmina-launcher`, `yonathan.nag`, `bw-vault`, `jvdp.launcher`).
+  - `plugins`: loaded plugins (`yonathan.displays`, `yonathan.remmina-launcher`, `yonathan.nag`, `bw-vault`, `jvdp.launcher`).
 - **`extensions/omarchy-menu.jsonc`**: adds to the Omarchy menu (`omarchy menu summon <name>`):
   - `trigger.displays`: open Displays & Workspaces.
   - `trigger.monitor-profile.*`: apply a display profile (`omarchy-display-profiles apply <name>`).

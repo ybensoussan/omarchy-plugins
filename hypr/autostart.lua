@@ -15,7 +15,7 @@ o.window("ai.opencode.desktop", { workspace = "7 silent" })
 o.window("chrome-faolnafnngnfdaknnbpnkhgohbobgegn-Default", { workspace = "8 silent" })
 o.window("chrome-ompifgpmddkgmclendfeacglnodjjndh-Default", { workspace = "9 silent" })
 
-o.launch_on_start("foot --app-id=org.omarchy.agent -e opencode")
+o.launch_on_start("foot --app-id=org.omarchy.agent -e herdr")
 o.launch_on_start("/opt/zen-browser-bin/zen-bin")
 o.launch_on_start("/home/yonathan/.local/zed.app/bin/zed")
 o.launch_on_start("remmina")
