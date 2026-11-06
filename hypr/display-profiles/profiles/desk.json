@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "name": "desk",
   "auto": true,
   "monitors": [
@@ -20,9 +20,47 @@
       "y": 560,
       "scale": 1.6,
       "transform": 0,
-      "workspaces": [
-        "ai",
-        "spotify"
+      "slots": [
+        {
+          "name": "ai",
+          "hidden": false
+        },
+        {
+          "name": "spotify",
+          "hidden": false
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        }
       ]
     },
     {
@@ -42,12 +80,47 @@
       "y": 560,
       "scale": 1.0,
       "transform": 0,
-      "workspaces": [
-        "terminal",
-        "browser",
-        "editor",
-        "remote",
-        "portal"
+      "slots": [
+        {
+          "name": "terminal",
+          "hidden": false
+        },
+        {
+          "name": "browser",
+          "hidden": false
+        },
+        {
+          "name": "editor",
+          "hidden": false
+        },
+        {
+          "name": "remote",
+          "hidden": false
+        },
+        {
+          "name": "portal",
+          "hidden": false
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        }
       ]
     },
     {
@@ -67,24 +140,48 @@
       "y": 0,
       "scale": 1.0,
       "transform": 3,
-      "workspaces": [
-        "slack",
-        "outlook",
-        "teams"
+      "slots": [
+        {
+          "name": "slack",
+          "hidden": false
+        },
+        {
+          "name": "outlook",
+          "hidden": false
+        },
+        {
+          "name": "teams",
+          "hidden": false
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        }
       ]
     }
-  ],
-  "parked": [],
-  "numbers": {
-    "terminal": 1,
-    "browser": 2,
-    "editor": 3,
-    "remote": 4,
-    "slack": 5,
-    "portal": 9,
-    "ai": 8,
-    "outlook": 6,
-    "teams": 7,
-    "spotify": 10
-  }
+  ]
 }

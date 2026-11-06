@@ -5,8 +5,9 @@ import QtQuick
 import qs.Commons
 import "Logic.js" as L
 
-// Displays & Workspaces: one place to arrange monitors, place/number/rename workspaces
-// and manage profiles. All persistence and applying is done by `omarchy-display-profiles`.
+// Displays & Workspaces: one place to arrange monitors, name and show/hide each monitor's
+// workspaces, and manage profiles. Omarchy gives every monitor workspaces 1-10 of its own;
+// a profile only names them. All persistence and applying is done by `omarchy-display-profiles`.
 Item {
   id: root
 
@@ -38,7 +39,7 @@ Item {
   readonly property bool isNew: draft !== null && originalName === ""
   readonly property bool dirty: draft !== null && (isNew || pendingCatalog !== null || L.canon(L.stripTransient(draft)) !== savedCanon)
   readonly property var check: draft ? L.problems(draft) : ({ errors: [], warnings: [] })
-  readonly property var columns: draft ? L.spatialOrder(draft.monitors).concat([-1]) : []
+  readonly property var columns: draft ? L.spatialOrder(draft.monitors) : []
   readonly property var notInProfile: {
     if (!draft) return []
     var used = draft.monitors.map(function(m) { return m._live })
@@ -46,8 +47,8 @@ Item {
   }
 
   property int selMonitor: -1
-  property string selWorkspace: ""
-  property string renaming: ""
+  property int selSlot: 0          // 1-10 on selMonitor, 0 = the monitor itself
+  property string renaming: ""     // "monitorIndex:slot" being renamed inline
   property var guides: []
 
   property string status: ""
@@ -65,12 +66,6 @@ Item {
   property var pickerCustom: null
   property string pickerCustomHint: ""
 
-  // workspace drag
-  property string dragName: ""
-  property point dragPoint: Qt.point(0, 0)
-  property int dropMonitor: -2   // -2 none, -1 parked, >=0 monitor index
-  property int dropBefore: -1
-
   // ---- helpers --------------------------------------------------------------
   function setStatus(text, error) { status = text; statusError = !!error }
   function fail(err) { setStatus(String(err || "Something went wrong.").trim(), true) }
@@ -82,9 +77,15 @@ Item {
   }
   function colorFor(index, alpha) { return Qt.hsla(L.hue(index), 0.55, 0.62, alpha) }
   function catalogEntry(name) {
-    for (var i = 0; i < catalog.length; i++) if (catalog[i].name === name) return catalog[i]
+    if (!name) return null
+    for (var i = 0; i < catalog.length; i++) if (catalog[i].name.toLowerCase() === String(name).toLowerCase()) return catalog[i]
     return null
   }
+  function slotEntry(mi, slot) {
+    if (!draft || mi < 0 || mi >= draft.monitors.length || slot < 1) return null
+    return draft.monitors[mi].slots[slot - 1] || null
+  }
+  function select(mi, slot) { selMonitor = mi; selSlot = slot || 0 }
   function edit(fn) { var d = L.clone(draft); fn(d); draft = d }
   function uniqueName(base) {
     var names = profiles.map(function(p) { return p.name })
@@ -158,7 +159,7 @@ Item {
     savedCanon = original ? L.canon(L.stripTransient(d)) : ""
     pendingCatalog = null
     selMonitor = -1
-    selWorkspace = ""
+    selSlot = 0
     renaming = ""
   }
 
@@ -226,12 +227,11 @@ Item {
     run(args, function(ok, out, err) {
       if (!ok) { fail(err); return }
       tryLeft = 0
-      var keepMonitor = selMonitor, keepWorkspace = selWorkspace
+      var keepMonitor = selMonitor, keepSlot = selSlot
       var reload = function() {
         refresh(function() {
           selectProfile(name, true)
-          if (keepMonitor >= 0 && draft && keepMonitor < draft.monitors.length) selMonitor = keepMonitor
-          if (keepWorkspace && catalogEntry(keepWorkspace)) selWorkspace = keepWorkspace
+          if (keepMonitor >= 0 && draft && keepMonitor < draft.monitors.length) select(keepMonitor, keepSlot)
         })
       }
       if (andApply) applyNamed(name, reload)
@@ -292,81 +292,9 @@ Item {
     })
   }
 
-  // ---- catalog (global workspace names, numbers, apps) -------------------
-  function catalogChange(mutate, patchDraft, renames, message) {
-    var wasDirty = dirty
-    var ws = L.clone(catalog)
-    var error = mutate(ws)
-    if (error) { fail(error); return }
-    run(["catalog-save", JSON.stringify({ workspaces: ws, renames: renames || {} })], function(ok, out, err) {
-      if (!ok) { fail(err); return }
-      pendingCatalog = null
-      setStatus(message)
-      refresh(function() {
-        if (draft && !isNew && !wasDirty) selectProfile(draft.name, true)
-        else if (draft && patchDraft) {
-          edit(patchDraft)
-          if (!isNew) {
-            var saved = findProfile(originalName)
-            if (saved) { var s = L.clone(saved); delete s.status; savedCanon = L.canon(L.stripTransient(s)) }
-          }
-        }
-      })
-    })
-  }
-
-  function validName(name, except) {
-    if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,23}$/.test(name)) return "Workspace names: letters, digits, '-', '_' or '.', max 24."
-    for (var i = 0; i < catalog.length; i++)
-      if (catalog[i].name.toLowerCase() === name.toLowerCase() && catalog[i].name !== except) return "“" + name + "” already exists."
-    return ""
-  }
-
-  function renameWorkspace(oldName, newName) {
-    renaming = ""
-    newName = newName.trim()
-    if (!newName || newName === oldName) return
-    var problem = validName(newName, oldName)
-    if (problem) { fail(problem); return }
-    var renames = {}
-    renames[oldName] = newName
-    if (selWorkspace === oldName) selWorkspace = newName
-    catalogChange(function(ws) { ws.forEach(function(w) { if (w.name === oldName) w.name = newName }) },
-                  function(d) { L.renameWorkspace(d, oldName, newName) }, renames,
-                  "Renamed “" + oldName + "” to “" + newName + "” in every profile.")
-  }
-
-  function addWorkspace() {
-    var n = 1, name = "workspace"
-    while (validName(name)) { n += 1; name = "workspace-" + n }
-    catalogChange(function(ws) {
-      var used = ws.map(function(w) { return w.number })
-      var num = 1
-      while (used.indexOf(num) >= 0) num += 1
-      ws.push({ name: name, number: num, apps: [] })
-    }, function(d) {
-      d.parked.push(name)
-      var used = Object.keys(d.numbers).map(function(k) { return d.numbers[k] })
-      var num = 1
-      while (used.indexOf(num) >= 0) num += 1
-      d.numbers[name] = num
-    }, {}, "Added “" + name + "” (parked). Double-click to rename, drag onto a display.")
-    selWorkspace = name
-  }
-
-  function deleteWorkspace(name) {
-    if (catalog.length <= 1) { fail("Keep at least one workspace."); return }
-    ask("Delete workspace “" + name + "” from every profile? Open windows stay where they are.", "Delete", function() {
-      if (selWorkspace === name) selWorkspace = ""
-      catalogChange(function(ws) { for (var i = ws.length - 1; i >= 0; i--) if (ws[i].name === name) ws.splice(i, 1) },
-        function(d) {
-          d.monitors.forEach(function(m) { m.workspaces = m.workspaces.filter(function(w) { return w !== name }) })
-          d.parked = d.parked.filter(function(w) { return w !== name })
-          delete d.numbers[name]
-        }, {}, "Deleted workspace “" + name + "”.")
-    })
-  }
-
+  // ---- workspace slots ------------------------------------------------------
+  // Names and visibility belong to the profile. App rules belong to a workspace name in the
+  // shared catalog, so they apply in every profile that uses that name.
   function stageCatalog(mutate, message) {
     var ws = L.clone(catalog)
     mutate(ws)
@@ -374,58 +302,55 @@ Item {
     setStatus(message + " Save to keep it.")
   }
 
+  function ensureEntry(ws, name) {
+    for (var i = 0; i < ws.length; i++) if (ws[i].name.toLowerCase() === name.toLowerCase()) return ws[i]
+    var entry = { name: name, apps: [], launch: {} }
+    ws.push(entry)
+    return entry
+  }
+
+  function renameSlot(mi, slot, newName) {
+    renaming = ""
+    var entry = slotEntry(mi, slot)
+    if (!entry) return
+    var oldName = entry.name
+    newName = String(newName || "").trim()
+    if (newName === oldName) return
+    var problem = L.nameProblem(draft, mi, slot, newName)
+    if (problem) { fail(problem); return }
+    edit(function(d) { L.setSlotName(d, mi, slot, newName) })
+    var from = catalogEntry(oldName)
+    var where = "slot " + L.slotKey(slot) + " on " + draft.monitors[mi].label
+    if (newName && !catalogEntry(newName) && from && from.apps.length) {
+      // A new name takes the app rules of the old one along; the old name keeps them for other profiles.
+      stageCatalog(function(ws) {
+        var e = ensureEntry(ws, newName)
+        e.apps = from.apps.slice()
+        e.launch = L.clone(from.launch || {})
+      }, "Named " + where + " “" + newName + "” and copied the app rules of “" + oldName + "”.")
+    } else if (newName && catalogEntry(newName) && catalogEntry(newName).apps.length) {
+      setStatus("Named " + where + " “" + newName + "”; it uses the app rules of that name.")
+    } else {
+      setStatus(newName ? "Named " + where + " “" + newName + "”." : "Cleared the name of " + where + ".")
+    }
+  }
+
+  function toggleSlot(mi, slot) {
+    edit(function(d) { L.toggleHidden(d, mi, slot) })
+  }
+
   function setApps(name, apps) {
-    stageCatalog(function(ws) { ws.forEach(function(w) { if (w.name === name) w.apps = apps }) },
+    stageCatalog(function(ws) { ensureEntry(ws, name).apps = apps },
                  "Updated app rules for “" + name + "”.")
   }
 
   function setLaunch(name, app, command) {
     stageCatalog(function(ws) {
-      ws.forEach(function(w) {
-        if (w.name !== name) return
-        w.launch = w.launch || {}
-        if (command) w.launch[app] = command
-        else delete w.launch[app]
-      })
+      var e = ensureEntry(ws, name)
+      e.launch = e.launch || {}
+      if (command) e.launch[app] = command
+      else delete e.launch[app]
     }, command ? "Will run “" + command + "” at login." : "Removed launch command.")
-  }
-
-  // ---- workspace drag and drop --------------------------------------------
-  function beginDrag(name, point) { dragName = name; dragPoint = point; selWorkspace = name; updateDrop(point) }
-  function moveDrag(point) { dragPoint = point; updateDrop(point) }
-  function endDrag() {
-    if (dragName && dropMonitor > -2) {
-      var name = dragName, mon = dropMonitor, before = dropBefore
-      edit(function(d) { L.moveWorkspace(d, name, mon, before) })
-    }
-    dragName = ""
-    dropMonitor = -2
-  }
-  function cancelDrag() { dragName = ""; dropMonitor = -2 }
-
-  function updateDrop(point) {
-    dropMonitor = -2
-    dropBefore = -1
-    for (var c = 0; c < boardRepeater.count; c++) {
-      var col = boardRepeater.itemAt(c)
-      if (!col) continue
-      var p = col.mapFromItem(content, point.x, point.y)
-      if (p.x >= 0 && p.y >= 0 && p.x <= col.width && p.y <= col.height) {
-        dropMonitor = col.monitorIndex
-        dropBefore = col.insertIndexAt(p.y)
-        return
-      }
-    }
-    for (var i = 0; i < cardRepeater.count; i++) {
-      var card = cardRepeater.itemAt(i)
-      if (!card) continue
-      var q = card.mapFromItem(content, point.x, point.y)
-      if (q.x >= 0 && q.y >= 0 && q.x <= card.width && q.y <= card.height) {
-        dropMonitor = i
-        dropBefore = -1
-        return
-      }
-    }
   }
 
   // ---- monitor edits -------------------------------------------------------
@@ -464,20 +389,6 @@ Item {
     }), function(scale) { edit(function(d) { d.monitors[idx].scale = scale }) })
   }
 
-  function pickNumber(name) {
-    var count = Math.max(10, catalog.length)
-    var owners = {}
-    for (var key in draft.numbers) owners[draft.numbers[key]] = key
-    var items = []
-    for (var n = 1; n <= count; n++) {
-      var owner = owners[n]
-      items.push({ label: (n === 10 ? "0 / 10" : String(n)) + (n <= 10 ? "   Super + " + (n % 10) : ""),
-                   sub: owner && owner !== name ? "swap with " + owner : (owner === name ? "current" : "free"),
-                   value: n, current: owner === name })
-    }
-    pick("Number for “" + name + "”", items, function(n) { edit(function(d) { L.setNumber(d, name, n) }) })
-  }
-
   // ---- lifecycle ------------------------------------------------------------
   function open(payload) {
     opened = true
@@ -488,7 +399,6 @@ Item {
 
   function close() {
     if (tryLeft > 0) revertTry()
-    cancelDrag()
     identify = false
     opened = false
   }
@@ -572,9 +482,8 @@ Item {
         if (event.key === Qt.Key_Escape) {
           if (root.pickerPick) root.pickerPick = null
           else if (root.confirmAction) root.confirmAction = null
-          else if (root.dragName) root.cancelDrag()
           else if (root.renaming) root.renaming = ""
-          else if (root.selMonitor >= 0 || root.selWorkspace) { root.selMonitor = -1; root.selWorkspace = "" }
+          else if (root.selMonitor >= 0) root.select(-1, 0)
           else root.requestClose()
           event.accepted = true
         } else if (ctrl && event.key === Qt.Key_S) {
@@ -717,7 +626,7 @@ Item {
             // ---------- monitor inspector ----------
             Column {
               id: monInspector
-              visible: root.draft && root.selMonitor >= 0 && root.selMonitor < root.draft.monitors.length && !root.selWorkspace
+              visible: root.draft && root.selMonitor >= 0 && root.selMonitor < root.draft.monitors.length && root.selSlot === 0
               width: parent.width
               spacing: 10
               readonly property var m: visible ? root.draft.monitors[root.selMonitor] : null
@@ -810,47 +719,53 @@ Item {
               }
             }
 
-            // ---------- workspace inspector ----------
+            // ---------- workspace (slot) inspector ----------
             Column {
               id: wsInspector
-              visible: root.draft && root.selWorkspace !== "" && !!root.catalogEntry(root.selWorkspace)
+              visible: !!slot
               width: parent.width
               spacing: 10
-              readonly property var entry: visible ? root.catalogEntry(root.selWorkspace) : null
-              readonly property var where: visible ? L.locate(root.draft, root.selWorkspace) : null
+              readonly property var slot: root.slotEntry(root.selMonitor, root.selSlot)
+              readonly property string name: slot ? slot.name : ""
+              readonly property var entry: root.catalogEntry(name)
+              readonly property var mon: slot ? root.draft.monitors[root.selMonitor] : null
 
-              Text { text: "Workspace"; color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption }
+              Row {
+                spacing: 8
+                Rectangle { width: 12; height: 12; radius: 3; color: root.colorFor(root.selMonitor, 1); anchors.verticalCenter: parent.verticalCenter }
+                Text {
+                  width: 240; elide: Text.ElideRight
+                  text: wsInspector.mon ? "Workspace " + L.slotKey(root.selSlot) + " on " + wsInspector.mon.label : ""
+                  color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption
+                }
+              }
               Field {
                 id: wsName; width: parent.width; fontSize: Style.font.heading
-                text: root.selWorkspace
-                onAccepted: root.renameWorkspace(root.selWorkspace, wsName.text)
-                onCancelled: wsName.text = root.selWorkspace
+                placeholder: "Unnamed — type a name"
+                text: wsInspector.name
+                onAccepted: root.renameSlot(root.selMonitor, root.selSlot, wsName.text)
+                onCancelled: wsName.text = wsInspector.name
               }
-              Text { width: parent.width; wrapMode: Text.WordWrap; text: "Press Enter to rename. Names are shared by all profiles."; color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption }
-
-              SectionLabel { text: "NUMBER IN THIS PROFILE" }
-              Btn {
-                width: parent.width
-                text: root.draft && root.draft.numbers[root.selWorkspace] !== undefined
-                      ? root.draft.numbers[root.selWorkspace] + (root.draft.numbers[root.selWorkspace] <= 10 ? "    ·    Super + " + (root.draft.numbers[root.selWorkspace] % 10) : "") : ""
-                onClicked: root.pickNumber(root.selWorkspace)
+              Text {
+                width: parent.width; wrapMode: Text.WordWrap; color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption
+                text: "Press Enter to rename; clear the field to remove the name. Names are per profile. Super + " + L.slotKey(root.selSlot) + " reaches this workspace while this display has focus."
               }
 
-              SectionLabel { text: "PLACED ON" }
-              Btn {
-                width: parent.width
-                text: wsInspector.where ? (wsInspector.where.monitor < 0 ? "Parked (not on any display)" : root.draft.monitors[wsInspector.where.monitor].label) : ""
-                onClicked: {
-                  var name = root.selWorkspace
-                  var items = root.draft.monitors.map(function(m, i) { return { label: m.label, sub: m._live || "not connected", value: i, current: wsInspector.where.monitor === i } })
-                  items.push({ label: "Parked", sub: "reachable by number only", value: -1, current: wsInspector.where.monitor < 0 })
-                  root.pick("Move “" + name + "” to", items, function(v) { root.edit(function(d) { L.moveWorkspace(d, name, v, -1) }) })
-                }
+              SectionLabel { text: "IN THE BAR AND MENUS" }
+              Row {
+                spacing: 6
+                Btn { icon: "󰈈"; text: "Shown"; checked: wsInspector.slot && !wsInspector.slot.hidden; onClicked: if (wsInspector.slot.hidden) root.toggleSlot(root.selMonitor, root.selSlot) }
+                Btn { icon: "󰈉"; text: "Hidden"; checked: wsInspector.slot && wsInspector.slot.hidden; onClicked: if (!wsInspector.slot.hidden) root.toggleSlot(root.selMonitor, root.selSlot) }
               }
 
               SectionLabel { text: "APPS THAT OPEN HERE" }
+              Text {
+                visible: !wsInspector.name
+                width: parent.width; wrapMode: Text.WordWrap; color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption
+                text: "Name this workspace to give it app rules."
+              }
               Repeater {
-                model: wsInspector.entry ? wsInspector.entry.apps : []
+                model: wsInspector.entry && wsInspector.name ? wsInspector.entry.apps : []
                 delegate: Column {
                   required property var modelData
                   required property int index
@@ -860,7 +775,7 @@ Item {
                     Text { anchors.left: parent.left; anchors.leftMargin: 8; anchors.right: rm.left; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; text: modelData; color: root.fg; font.family: "monospace"; font.pixelSize: Style.font.caption }
                     Btn {
                       id: rm; compact: true; icon: "󰅖"; anchors.right: parent.right; anchors.rightMargin: 3; anchors.verticalCenter: parent.verticalCenter
-                      onClicked: { var apps = wsInspector.entry.apps.slice(); apps.splice(index, 1); root.setApps(root.selWorkspace, apps) }
+                      onClicked: { var apps = wsInspector.entry.apps.slice(); apps.splice(index, 1); root.setApps(wsInspector.name, apps) }
                     }
                   }
                   Field {
@@ -870,23 +785,29 @@ Item {
                       target: launchField.input; property: "text"
                       value: (wsInspector.entry && wsInspector.entry.launch && wsInspector.entry.launch[modelData]) || ""
                     }
-                    onAccepted: root.setLaunch(root.selWorkspace, modelData, launchField.text.trim())
+                    onAccepted: root.setLaunch(wsInspector.name, modelData, launchField.text.trim())
                     onFocusLost: {
                       var saved = (wsInspector.entry && wsInspector.entry.launch && wsInspector.entry.launch[modelData]) || ""
-                      if (launchField.text.trim() !== saved) root.setLaunch(root.selWorkspace, modelData, launchField.text.trim())
+                      if (launchField.text.trim() !== saved) root.setLaunch(wsInspector.name, modelData, launchField.text.trim())
                     }
                   }
                 }
               }
-              Text { visible: wsInspector.entry && !wsInspector.entry.apps.length; text: "None. Apps with a rule open here and are moved here when a profile is applied."; width: parent.width; wrapMode: Text.WordWrap; color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption }
+              Text {
+                visible: !!wsInspector.name && !(wsInspector.entry && wsInspector.entry.apps.length)
+                text: "None. Apps with a rule open here and are moved here when a profile is applied. Rules belong to the name “" + wsInspector.name + "” in every profile."
+                width: parent.width; wrapMode: Text.WordWrap; color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption
+              }
               Btn {
+                visible: !!wsInspector.name
                 width: parent.width
                 icon: "󰐕"; text: "Add app…"
                 onClicked: {
-                  var name = root.selWorkspace
+                  var name = wsInspector.name
                   root.refresh(function() {
                     var addApp = function(rx) {
-                      var apps = root.catalogEntry(name).apps
+                      var e = root.catalogEntry(name)
+                      var apps = e ? e.apps : []
                       if (apps.indexOf(rx) < 0) root.setApps(name, apps.concat([rx]))
                     }
                     root.pick("Add an app to “" + name + "”", (root.st ? root.st.windows : []).map(function(w) {
@@ -897,14 +818,11 @@ Item {
                   })
                 }
               }
-
-              Item { width: 1; height: 6 }
-              Btn { danger: true; icon: "󰆴"; text: "Delete workspace"; onClicked: root.deleteWorkspace(root.selWorkspace) }
             }
 
             // ---------- profile overview (nothing selected) ----------
             Column {
-              visible: root.draft && root.selMonitor < 0 && !root.selWorkspace
+              visible: root.draft && root.selMonitor < 0
               width: parent.width
               spacing: 10
 
@@ -942,8 +860,8 @@ Item {
                 width: 272; wrapMode: Text.WordWrap; color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption; lineHeight: 1.3
                 text: "• Drag displays to arrange them; they snap to edges and centres. Hold Shift to place freely.\n"
                     + "• Click a display or workspace to edit it here.\n"
-                    + "• Drag workspaces between columns (or onto a display) to move them; the order is the bar order.\n"
-                    + "• Double-click a workspace to rename it; click its number to change Super+N.\n"
+                    + "• Every display has workspaces 1-0 of its own; Super + N goes to slot N on the focused display.\n"
+                    + "• Double-click a workspace to rename it; click the eye to show or hide it in the bar and menus.\n"
                     + "• Ctrl+S save · Ctrl+Enter save & apply · Ctrl+Z discard · Esc close"
               }
             }
@@ -1021,7 +939,7 @@ Item {
             Rectangle { required property int index; y: canvas.oy % (canvas.zoom * 500) + index * canvas.zoom * 500; height: 1; width: canvas.width; color: Qt.alpha(root.fg, 0.04) }
           }
 
-          MouseArea { anchors.fill: parent; onClicked: { root.selMonitor = -1; root.selWorkspace = "" } }
+          MouseArea { anchors.fill: parent; onClicked: root.select(-1, 0) }
 
           Repeater {
             id: cardRepeater
@@ -1031,8 +949,7 @@ Item {
               required property int index
               readonly property var m: root.draft && index < root.draft.monitors.length ? root.draft.monitors[index] : null
               readonly property bool online: !!(m && m._live && root.liveFor(m))
-              readonly property bool selected: root.selMonitor === index && !root.selWorkspace
-              readonly property bool dropHere: root.dragName !== "" && root.dropMonitor === index
+              readonly property bool selected: root.selMonitor === index && root.selSlot === 0
               property bool dragging: false
               property real dx: 0
               property real dy: 0
@@ -1046,9 +963,9 @@ Item {
               z: dragging ? 10 : selected ? 5 : 1
               radius: 6
               opacity: m && m.enabled ? (online ? 1 : 0.6) : 0.4
-              color: root.colorFor(index, dragging ? 0.3 : dropHere ? 0.34 : 0.18)
-              border.width: selected || dragging || dropHere ? 2 : 1
-              border.color: bad ? root.red : (selected || dropHere) ? root.accent : root.colorFor(index, 0.85)
+              color: root.colorFor(index, dragging ? 0.3 : 0.18)
+              border.width: selected || dragging ? 2 : 1
+              border.color: bad ? root.red : selected ? root.accent : root.colorFor(index, 0.85)
 
               Column {
                 anchors.centerIn: parent
@@ -1071,11 +988,11 @@ Item {
                   width: parent.width
                   spacing: 3
                   Repeater {
-                    model: card.m ? card.m.workspaces : []
+                    model: card.m ? L.visibleSlots(card.m) : []
                     delegate: Rectangle {
                       required property var modelData
                       width: chip.implicitWidth + 8; height: 16; radius: 4; color: Qt.alpha(root.bg, 0.6)
-                      Text { id: chip; anchors.centerIn: parent; text: (root.draft.numbers[modelData] % 10) + " " + modelData; color: root.fg; font.family: root.font; font.pixelSize: Style.font.caption - 1 }
+                      Text { id: chip; anchors.centerIn: parent; text: L.slotKey(modelData.slot) + (modelData.name ? " " + modelData.name : ""); color: root.fg; font.family: root.font; font.pixelSize: Style.font.caption - 1 }
                     }
                   }
                 }
@@ -1088,8 +1005,7 @@ Item {
                 property real sx: 0
                 property real sy: 0
                 onPressed: function(mouse) {
-                  root.selMonitor = card.index
-                  root.selWorkspace = ""
+                  root.select(card.index, 0)
                   start = mapToItem(canvas, mouse.x, mouse.y)
                   sx = card.m.x; sy = card.m.y
                   card.dx = sx; card.dy = sy
@@ -1170,7 +1086,7 @@ Item {
           }
         }
 
-        // -------- workspace board --------
+        // -------- workspace board: every display's own workspaces 1-0 --------
         Item {
           id: boardArea
           anchors { left: parent.left; right: parent.right; top: canvas.bottom; bottom: parent.bottom; topMargin: 12 }
@@ -1181,17 +1097,10 @@ Item {
             height: 28
             Text { id: wsTitle; text: "WORKSPACES"; color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption; font.bold: true; font.letterSpacing: 1.2; anchors.verticalCenter: parent.verticalCenter }
             Text {
-              anchors { left: wsTitle.right; leftMargin: 10; right: boardButtons.left; rightMargin: 10; verticalCenter: parent.verticalCenter }
+              anchors { left: wsTitle.right; leftMargin: 10; right: parent.right; verticalCenter: parent.verticalCenter }
               elide: Text.ElideRight
-              text: "drag to move/reorder  ·  double-click to rename  ·  click the number to change Super+N"
+              text: "each display has its own 1-0  ·  double-click to rename  ·  󰈈 show / 󰈉 hide in the bar and menus"
               color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption
-            }
-            Row {
-              id: boardButtons
-              anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
-              spacing: 6
-              Btn { compact: true; icon: "󰎠"; text: "Number by position"; enabled: !!root.draft; onClicked: { root.edit(function(d) { L.autoNumber(d) }); root.setStatus("Numbered left to right, top to bottom, then parked.") } }
-              Btn { compact: true; icon: "󰐕"; text: "Workspace"; enabled: !!root.draft && !root.busy; onClicked: root.addWorkspace() }
             }
           }
 
@@ -1201,80 +1110,59 @@ Item {
             contentWidth: boardRow.implicitWidth
             contentHeight: height
             clip: true
-            interactive: root.dragName === ""
             boundsBehavior: Flickable.StopAtBounds
 
             Row {
               id: boardRow
               height: boardFlick.height
               spacing: 10
-              readonly property real colWidth: Math.max(180, (boardFlick.width - (root.columns.length - 1) * 10) / Math.max(root.columns.length, 1))
+              readonly property real colWidth: Math.max(200, (boardFlick.width - (root.columns.length - 1) * 10) / Math.max(root.columns.length, 1))
 
               Repeater {
-                id: boardRepeater
                 model: root.columns
                 delegate: Rectangle {
                   id: column
                   required property var modelData
                   readonly property int monitorIndex: modelData
-                  readonly property var mon: monitorIndex >= 0 && root.draft ? root.draft.monitors[monitorIndex] : null
-                  readonly property var items: !root.draft ? [] : monitorIndex >= 0 ? (mon ? mon.workspaces : []) : root.draft.parked
-                  readonly property bool target: root.dragName !== "" && root.dropMonitor === monitorIndex
-                  readonly property real rowH: 34
-                  readonly property real rowGap: 4
+                  readonly property var mon: root.draft && monitorIndex < root.draft.monitors.length ? root.draft.monitors[monitorIndex] : null
+                  readonly property real rowH: 30
+                  readonly property real rowGap: 3
                   readonly property real listTop: 46
-                  function insertIndexAt(y) {
-                    var i = Math.floor((y - listTop + wsList.contentY + (rowH + rowGap) / 2) / (rowH + rowGap))
-                    return Math.max(0, Math.min(items.length, i))
-                  }
 
                   width: boardRow.colWidth
                   height: boardRow.height
                   radius: 10
-                  color: target ? Qt.alpha(root.accent, 0.1) : Qt.alpha(root.fg, 0.035)
+                  color: Qt.alpha(root.fg, 0.035)
                   border.width: 1
-                  border.color: target ? root.accent : monitorIndex >= 0 ? root.colorFor(monitorIndex, 0.45) : Qt.alpha(root.fg, 0.12)
+                  border.color: root.colorFor(monitorIndex, 0.45)
+                  opacity: column.mon && column.mon.enabled ? 1 : 0.55
 
                   // column header
                   Rectangle {
                     anchors { left: parent.left; right: parent.right; top: parent.top }
                     height: 38; radius: 10
-                    color: column.monitorIndex >= 0 ? root.colorFor(column.monitorIndex, 0.16) : Qt.alpha(root.fg, 0.05)
+                    color: root.colorFor(column.monitorIndex, 0.16)
                     Column {
                       anchors.left: parent.left; anchors.leftMargin: 10; anchors.right: parent.right; anchors.rightMargin: 10
                       anchors.verticalCenter: parent.verticalCenter
                       Text {
                         width: parent.width; elide: Text.ElideRight
-                        text: column.monitorIndex >= 0 ? (column.mon ? column.mon.label : "") : "Parked"
+                        text: column.mon ? column.mon.label : ""
                         color: root.fg; font.family: root.font; font.pixelSize: Style.font.body; font.bold: true
                       }
                       Text {
                         width: parent.width; elide: Text.ElideRight
-                        text: column.monitorIndex >= 0 ? (column.mon ? ((column.mon._live && root.liveFor(column.mon)) ? column.mon._live : "not connected — uses first display") + (column.mon.enabled ? "" : " · disabled") : "") : "not on a display · Super+N still works"
+                        text: column.mon ? ((column.mon._live && root.liveFor(column.mon)) ? column.mon._live : "not connected")
+                              + (column.mon.enabled ? "" : " · disabled")
+                              + "  ·  " + L.visibleSlots(column.mon).length + " shown" : ""
                         color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption
                       }
                     }
                     MouseArea {
                       anchors.fill: parent
-                      enabled: column.monitorIndex >= 0
-                      cursorShape: column.monitorIndex >= 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
-                      onClicked: { root.selMonitor = column.monitorIndex; root.selWorkspace = "" }
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: root.select(column.monitorIndex, 0)
                     }
-                  }
-
-                  // drop indicator
-                  Rectangle {
-                    visible: column.target
-                    x: 8; width: column.width - 16; height: 3; radius: 2; color: root.accent
-                    y: column.listTop - wsList.contentY + Math.max(0, root.dropBefore < 0 ? column.items.length : root.dropBefore) * (column.rowH + column.rowGap) - 3
-                    z: 5
-                  }
-
-                  Text {
-                    visible: column.items.length === 0
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    y: column.listTop + 10
-                    text: "Drop workspaces here"; color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption
                   }
 
                   Flickable {
@@ -1286,7 +1174,7 @@ Item {
                     clip: true
                     contentWidth: width
                     contentHeight: wsRows.height
-                    interactive: root.dragName === "" && contentHeight > height
+                    interactive: contentHeight > height
                     boundsBehavior: Flickable.StopAtBounds
 
                     Column {
@@ -1294,19 +1182,19 @@ Item {
                       width: wsList.width
                       spacing: column.rowGap
                       Repeater {
-                        model: column.items
+                        model: column.mon ? column.mon.slots : []
                         delegate: Rectangle {
                           id: wrow
                           required property var modelData
                           required property int index
-                          readonly property string name: modelData
-                          readonly property bool selected: root.selWorkspace === name
-                          readonly property var entry: root.catalogEntry(name)
+                          readonly property int slot: index + 1
+                          readonly property string key: column.monitorIndex + ":" + slot
+                          readonly property bool selected: root.selMonitor === column.monitorIndex && root.selSlot === slot
+                          readonly property var entry: root.catalogEntry(modelData.name)
                           width: parent.width
                           height: column.rowH
                           radius: 7
-                          opacity: root.dragName === name ? 0.35 : 1
-                          color: selected ? Qt.alpha(root.accent, 0.2) : rowArea.containsMouse ? Qt.alpha(root.fg, 0.1) : Qt.alpha(root.fg, 0.05)
+                          color: selected ? Qt.alpha(root.accent, 0.2) : rowArea.containsMouse ? Qt.alpha(root.fg, 0.1) : Qt.alpha(root.fg, modelData.hidden ? 0.02 : 0.05)
                           border.width: selected ? 1 : 0
                           border.color: root.accent
 
@@ -1314,64 +1202,72 @@ Item {
                             id: rowArea
                             anchors.fill: parent
                             hoverEnabled: true
-                            preventStealing: true
-                            cursorShape: root.dragName ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-                            property point start: Qt.point(0, 0)
-                            property bool moved: false
-                            onPressed: function(mouse) { start = Qt.point(mouse.x, mouse.y); moved = false; root.selWorkspace = wrow.name; root.selMonitor = -1 }
-                            onPositionChanged: function(mouse) {
-                              if (!pressed) return
-                              var p = mapToItem(content, mouse.x, mouse.y)
-                              if (!moved) {
-                                if (Math.abs(mouse.x - start.x) + Math.abs(mouse.y - start.y) < 6) return
-                                moved = true
-                                root.beginDrag(wrow.name, p)
-                              } else root.moveDrag(p)
-                            }
-                            onReleased: if (moved) root.endDrag()
-                            onCanceled: root.cancelDrag()
-                            onDoubleClicked: { root.renaming = wrow.name }
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.select(column.monitorIndex, wrow.slot)
+                            onDoubleClicked: { root.select(column.monitorIndex, wrow.slot); root.renaming = wrow.key }
                           }
-
-                          Text { id: grip; x: 8; anchors.verticalCenter: parent.verticalCenter; text: "⠿"; color: root.dim; font.pixelSize: Style.font.title }
 
                           Rectangle {
                             id: badge
-                            x: 24; anchors.verticalCenter: parent.verticalCenter
-                            width: 26; height: 22; radius: 5
-                            color: badgeArea.containsMouse ? root.accent : Qt.alpha(root.accent, 0.25)
+                            x: 6; anchors.verticalCenter: parent.verticalCenter
+                            width: 24; height: 20; radius: 5
+                            color: Qt.alpha(root.accent, wrow.modelData.hidden ? 0.08 : 0.25)
                             Text {
                               anchors.centerIn: parent
-                              text: root.draft && root.draft.numbers[wrow.name] !== undefined ? String(root.draft.numbers[wrow.name]) : "?"
-                              color: badgeArea.containsMouse ? root.bg : root.fg; font.family: root.font; font.pixelSize: Style.font.bodySmall; font.bold: true
+                              text: L.slotKey(wrow.slot)
+                              color: root.fg; opacity: wrow.modelData.hidden ? 0.5 : 1
+                              font.family: root.font; font.pixelSize: Style.font.bodySmall; font.bold: true
                             }
-                            MouseArea { id: badgeArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { root.selWorkspace = wrow.name; root.pickNumber(wrow.name) } }
                           }
 
                           Text {
-                            visible: root.renaming !== wrow.name
+                            visible: root.renaming !== wrow.key
                             anchors.left: badge.right; anchors.leftMargin: 8; anchors.right: appsLabel.left; anchors.rightMargin: 4
                             anchors.verticalCenter: parent.verticalCenter
                             elide: Text.ElideRight
-                            text: wrow.name; color: root.fg; font.family: root.font; font.pixelSize: Style.font.body
+                            text: wrow.modelData.name || "unnamed"
+                            color: wrow.modelData.name ? root.fg : root.dim
+                            opacity: wrow.modelData.hidden ? 0.45 : 1
+                            font.family: root.font; font.pixelSize: Style.font.body; font.italic: !wrow.modelData.name
                           }
                           Field {
                             id: renameField
-                            visible: root.renaming === wrow.name
-                            anchors.left: badge.right; anchors.leftMargin: 6; anchors.right: parent.right; anchors.rightMargin: 4
+                            visible: root.renaming === wrow.key
+                            anchors.left: badge.right; anchors.leftMargin: 6; anchors.right: eye.left; anchors.rightMargin: 4
                             anchors.verticalCenter: parent.verticalCenter
-                            height: 26
-                            onVisibleChanged: if (visible) { text = wrow.name; input.forceActiveFocus(); input.selectAll() }
-                            onAccepted: root.renameWorkspace(wrow.name, text)
+                            height: 24
+                            placeholder: "name (empty = unnamed)"
+                            onVisibleChanged: if (visible) { text = wrow.modelData.name; input.forceActiveFocus(); input.selectAll() }
+                            onAccepted: root.renameSlot(column.monitorIndex, wrow.slot, text)
                             onCancelled: root.renaming = ""
-                            onFocusLost: if (root.renaming === wrow.name) root.renaming = ""
+                            onFocusLost: if (root.renaming === wrow.key) root.renaming = ""
                           }
                           Text {
                             id: appsLabel
-                            visible: root.renaming !== wrow.name
-                            anchors.right: parent.right; anchors.rightMargin: 8; anchors.verticalCenter: parent.verticalCenter
-                            text: wrow.entry && wrow.entry.apps.length ? "󰀻 " + wrow.entry.apps.length : ""
-                            color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption
+                            visible: root.renaming !== wrow.key
+                            anchors.right: eye.left; anchors.rightMargin: 6; anchors.verticalCenter: parent.verticalCenter
+                            text: wrow.entry && wrow.modelData.name && wrow.entry.apps.length ? "󰀻 " + wrow.entry.apps.length : ""
+                            color: root.dim; opacity: wrow.modelData.hidden ? 0.45 : 1
+                            font.family: root.font; font.pixelSize: Style.font.caption
+                          }
+                          Rectangle {
+                            id: eye
+                            anchors.right: parent.right; anchors.rightMargin: 4; anchors.verticalCenter: parent.verticalCenter
+                            width: 26; height: 22; radius: 5
+                            color: eyeArea.containsMouse ? Qt.alpha(root.fg, 0.14) : "transparent"
+                            Text {
+                              anchors.centerIn: parent
+                              text: wrow.modelData.hidden ? "󰈉" : "󰈈"
+                              color: wrow.modelData.hidden ? root.dim : root.accent
+                              font.pixelSize: Style.font.title
+                            }
+                            MouseArea {
+                              id: eyeArea
+                              anchors.fill: parent
+                              hoverEnabled: true
+                              cursorShape: Qt.PointingHandCursor
+                              onClicked: root.toggleSlot(column.monitorIndex, wrow.slot)
+                            }
                           }
                         }
                       }
@@ -1412,23 +1308,6 @@ Item {
             enabled: !!root.draft && !root.busy && !root.check.errors.length
             onClicked: root.dirty ? root.saveDraft(true) : root.applyNamed(root.draft.name, null)
           }
-        }
-      }
-
-      // ================= drag ghost =================
-      Rectangle {
-        visible: root.dragName !== ""
-        z: 1000
-        x: root.dragPoint.x - 20
-        y: root.dragPoint.y - 17
-        width: 190; height: 34; radius: 7
-        color: root.bg
-        border.width: 2
-        border.color: root.accent
-        Text {
-          anchors.centerIn: parent
-          text: (root.draft && root.draft.numbers[root.dragName] !== undefined ? root.draft.numbers[root.dragName] + "  " : "") + root.dragName
-          color: root.fg; font.family: root.font; font.pixelSize: Style.font.body; font.bold: true
         }
       }
 

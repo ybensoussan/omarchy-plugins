@@ -32,6 +32,7 @@ ITEMS+=(
   "Omarchy themes, themed templates and branding|omarchy/themes omarchy/themed omarchy/branding|$CFG/omarchy"
   "Hyprland config (hypr/*.lua, conf, json)|hypr/.|$CFG/hypr"
   "Helper scripts (bin/ -> ~/.local/bin)|bin/.|$BIN"
+  "Display profiles backend (share/display-profiles -> ~/.local/share)|share/display-profiles|$HOME/.local/share"
 )
 
 labels=(); for i in "${ITEMS[@]}"; do labels+=("${i%%|*}"); done
@@ -60,7 +61,7 @@ install_one() {
   for s in $srcs; do
     src="$REPO/$s"
     if [[ $s == */. ]]; then   # directory contents -> dest
-      for f in "$src"/* "$src"/.[!.]*; do [[ -e $f ]] && put "$f" "$dest/$(basename "$f")"; done
+      for f in "$src"/* "$src"/.[!.]*; do if [[ -e $f ]]; then put "$f" "$dest/$(basename "$f")"; fi; done
     else
       put "$src" "$dest/$(basename "$src")"
     fi

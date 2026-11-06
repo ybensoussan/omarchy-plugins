@@ -161,67 +161,67 @@ function spatialOrder(monitors) {
     .sort(function(a, b) { return monitors[a].x - monitors[b].x || monitors[a].y - monitors[b].y })
 }
 
-// Workspace placement ------------------------------------------------------
+// Workspace slots -----------------------------------------------------------
+// Omarchy gives every monitor workspaces 1-10 of its own. A profile names those
+// slots per monitor and hides the ones it does not want in the bar.
 
-function locate(draft, name) {
+var SLOTS = 10
+var DEFAULT_VISIBLE = 5
+var NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,23}$/
+
+function defaultSlots() {
+  var slots = []
+  for (var i = 0; i < SLOTS; i++) slots.push({ name: "", hidden: i >= DEFAULT_VISIBLE })
+  return slots
+}
+
+// The key that reaches a slot with Super: 1-9, then 0 for the tenth.
+function slotKey(slot) { return slot === SLOTS ? "0" : String(slot) }
+
+function slotLabel(slotEntry, slot) { return slotEntry && slotEntry.name ? slotEntry.name : "Workspace " + slotKey(slot) }
+
+// Where a name is used in the draft: { monitor, slot } (slot 1-based) or null.
+function findName(draft, name) {
+  var wanted = String(name || "").toLowerCase()
+  if (!wanted) return null
   for (var i = 0; i < draft.monitors.length; i++) {
-    var j = draft.monitors[i].workspaces.indexOf(name)
-    if (j >= 0) return { monitor: i, index: j }
+    var slots = draft.monitors[i].slots || []
+    for (var j = 0; j < slots.length; j++)
+      if (slots[j].name && slots[j].name.toLowerCase() === wanted) return { monitor: i, slot: j + 1 }
   }
-  var p = draft.parked.indexOf(name)
-  return p >= 0 ? { monitor: -1, index: p } : null
+  return null
 }
 
-function listFor(draft, monitor) { return monitor < 0 ? draft.parked : draft.monitors[monitor].workspaces }
+// Why `name` cannot go on slot `slot` of monitor `monitor`, or "" when it can.
+function nameProblem(draft, monitor, slot, name) {
+  if (!name) return ""
+  if (!NAME_RE.test(name)) return "Workspace names: letters, digits, '-', '_' or '.', max 24."
+  var at = findName(draft, name)
+  if (at && !(at.monitor === monitor && at.slot === slot))
+    return "“" + name + "” is already slot " + slotKey(at.slot) + " on " + draft.monitors[at.monitor].label + "."
+  return ""
+}
 
-// Move workspace `name` to monitor (index, or -1 for parked) at position `before` (index in target list, -1 = end).
-function moveWorkspace(draft, name, monitor, before) {
-  var from = locate(draft, name)
-  if (!from) return draft
-  var source = listFor(draft, from.monitor)
-  source.splice(from.index, 1)
-  var target = listFor(draft, monitor)
-  if (from.monitor === monitor && before > from.index) before -= 1
-  if (before < 0 || before > target.length) before = target.length
-  target.splice(before, 0, name)
+function setSlotName(draft, monitor, slot, name) {
+  draft.monitors[monitor].slots[slot - 1].name = name
   return draft
 }
 
-function allNames(draft) {
-  var names = []
-  spatialOrder(draft.monitors).forEach(function(i) { names = names.concat(draft.monitors[i].workspaces) })
-  return names.concat(draft.parked)
-}
-
-// Give `name` number n; whoever had n takes name's old number (swap).
-function setNumber(draft, name, n) {
-  var old = draft.numbers[name]
-  for (var key in draft.numbers)
-    if (key !== name && draft.numbers[key] === n) draft.numbers[key] = old
-  draft.numbers[name] = n
+function toggleHidden(draft, monitor, slot) {
+  var entry = draft.monitors[monitor].slots[slot - 1]
+  entry.hidden = !entry.hidden
   return draft
 }
 
-function autoNumber(draft) {
-  var names = allNames(draft)
-  var numbers = {}
-  names.forEach(function(name, i) { numbers[name] = i + 1 })
-  draft.numbers = numbers
-  return draft
-}
-
-function renameWorkspace(draft, oldName, newName) {
-  draft.monitors.forEach(function(m) {
-    m.workspaces = m.workspaces.map(function(n) { return n === oldName ? newName : n })
-  })
-  draft.parked = draft.parked.map(function(n) { return n === oldName ? newName : n })
-  if (draft.numbers[oldName] !== undefined) { draft.numbers[newName] = draft.numbers[oldName]; delete draft.numbers[oldName] }
-  return draft
+function visibleSlots(m) {
+  var out = []
+  var slots = (m && m.slots) || []
+  for (var i = 0; i < slots.length; i++) if (!slots[i].hidden) out.push({ slot: i + 1, name: slots[i].name })
+  return out
 }
 
 function removeMonitor(draft, idx) {
-  var gone = draft.monitors.splice(idx, 1)[0]
-  draft.parked = gone.workspaces.concat(draft.parked)
+  draft.monitors.splice(idx, 1)
   return draft
 }
 
@@ -229,7 +229,7 @@ function monitorFromLive(live, x, y) {
   return {
     match: clone(live.match), label: live.label, enabled: true, mode: live.mode,
     width: live.width, height: live.height, x: x, y: y, scale: live.scale || 1,
-    transform: live.transform || 0, workspaces: [], _live: live.name
+    transform: live.transform || 0, slots: defaultSlots(), _live: live.name
   }
 }
 
@@ -256,8 +256,17 @@ function problems(draft) {
       if (!linked) warnings.push(mons[k].label + " does not touch another display; the cursor cannot cross to it.")
     }
   }
+  var seen = {}
   mons.forEach(function(m) {
-    if (m.enabled !== false && !m.workspaces.length) warnings.push(m.label + " has no workspaces.")
+    var slots = m.slots || []
+    slots.forEach(function(s, i) {
+      if (!s.name) return
+      if (!NAME_RE.test(s.name)) errors.push("“" + s.name + "” on " + m.label + " is not a valid workspace name.")
+      var key = s.name.toLowerCase()
+      if (seen[key]) errors.push("“" + s.name + "” is used on " + seen[key] + " and " + m.label + ".")
+      else seen[key] = m.label
+    })
+    if (m.enabled !== false && slots.length && !visibleSlots(m).length) warnings.push(m.label + " shows no workspaces in the bar.")
   })
   return { errors: errors, warnings: warnings }
 }

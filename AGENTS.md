@@ -19,6 +19,7 @@ The live copies are the source of truth for day-to-day use. The repo holds copie
 | `omarchy/themes/`, `themed/`, `branding/` | `~/.config/omarchy/` | |
 | `hypr/` | `~/.config/hypr/` | Hyprland **Lua** config (`hyprland.lua` is the entry point) |
 | `bin/` | `~/.local/bin/` | Helper scripts invoked by keybindings, menu entries, plugins |
+| `share/display-profiles/` | `~/.local/share/display-profiles/` | Python backend of `yonathan.displays` (`displayprofiles.py`, run by `bin/omarchy-display-profiles`) |
 | `install.sh` | n/a | Interactive installer (`--all`, `--link`, `--dry-run`) |
 
 ## Plugins
@@ -31,6 +32,7 @@ Tests (plain Node, no deps):
 ```sh
 node plugins/yonathan.displays/tests/logic.test.mjs
 node plugins/yonathan.workspaces/tests/order.test.cjs
+python3 -m unittest discover -s share/display-profiles/tests
 ```
 
 ## How the pieces connect
@@ -38,7 +40,7 @@ node plugins/yonathan.workspaces/tests/order.test.cjs
 - `hypr/bindings.lua` binds keys to `bin/*` scripts, `omarchy menu summon ...`, and `omarchy-shell ... yonathan.<plugin> ...`.
 - `omarchy/extensions/omarchy-menu.jsonc` entries call `omarchy-display-profiles`, `omarchy-workspace-switch`, `omarchy-workspace-move-window`.
 - `hypr/autostart.lua` runs `omarchy-display-profiles watch`, which regenerates `hypr/workspace-profile.lua` and `hypr/workspace-order.json` when monitors change.
-- Workspace names/numbers come from `hypr/display-profiles/catalog.json`; monitor layouts from `hypr/display-profiles/profiles/*.json`.
+- Workspaces follow Omarchy 4.5's per-monitor model (`/usr/share/omarchy/default/hypr/monitor-workspaces.lua`): every monitor has slots 1-10, Hyprland id = block * 10 + slot, blocks per physical monitor in `~/.local/state/omarchy/monitor-workspaces`. Profiles (`hypr/display-profiles/profiles/*.json`, format v3) hold monitor layouts plus ten `{name, hidden}` slots per monitor; they never move workspaces between monitors. `hypr/display-profiles/catalog.json` holds app rules per workspace name, shared by profiles.
 
 ## Rules and gotchas
 
@@ -60,6 +62,7 @@ for p in $R/plugins/*/; do n=$(basename $p); [ -d $C/omarchy/plugins/$n ] && rsy
 rsync -a --exclude='*.bak*' $C/hypr/ $R/hypr/
 rsync -a --exclude='*.bak*' $C/omarchy/{shell.json,shell.toml,extensions,hooks,branding,themed} $R/omarchy/
 for s in $R/bin/*; do cp -a ~/.local/bin/$(basename $s) $s; done
+rsync -a --exclude='__pycache__' ~/.local/share/display-profiles/ $R/share/display-profiles/
 git -C $R status --short   # review the diff before committing
 ```
 

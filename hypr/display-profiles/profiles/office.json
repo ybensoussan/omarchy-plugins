@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "name": "office",
   "auto": true,
   "monitors": [
@@ -20,8 +20,47 @@
       "y": 0,
       "scale": 1.0,
       "transform": 0,
-      "workspaces": [
-        "ai"
+      "slots": [
+        {
+          "name": "ai",
+          "hidden": false
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        }
       ]
     },
     {
@@ -41,10 +80,47 @@
       "y": 0,
       "scale": 0.8,
       "transform": 0,
-      "workspaces": [
-        "slack",
-        "outlook",
-        "teams"
+      "slots": [
+        {
+          "name": "slack",
+          "hidden": false
+        },
+        {
+          "name": "outlook",
+          "hidden": false
+        },
+        {
+          "name": "teams",
+          "hidden": false
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        }
       ]
     },
     {
@@ -64,28 +140,48 @@
       "y": 0,
       "scale": 0.8,
       "transform": 0,
-      "workspaces": [
-        "terminal",
-        "browser",
-        "editor",
-        "remote"
+      "slots": [
+        {
+          "name": "terminal",
+          "hidden": false
+        },
+        {
+          "name": "browser",
+          "hidden": false
+        },
+        {
+          "name": "editor",
+          "hidden": false
+        },
+        {
+          "name": "remote",
+          "hidden": false
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        },
+        {
+          "name": "",
+          "hidden": true
+        }
       ]
     }
-  ],
-  "parked": [
-    "portal",
-    "spotify"
-  ],
-  "numbers": {
-    "terminal": 1,
-    "browser": 2,
-    "editor": 3,
-    "remote": 4,
-    "slack": 5,
-    "portal": 6,
-    "ai": 7,
-    "outlook": 8,
-    "teams": 9,
-    "spotify": 10
-  }
+  ]
 }

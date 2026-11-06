@@ -1,87 +1,449 @@
 {
+  "version": 3,
   "profile": "desk",
-  "order": [
-    8,
-    10,
-    1,
-    2,
-    3,
-    4,
-    9,
-    5,
-    6,
-    7
+  "monitors": [
+    {
+      "output": "eDP-1",
+      "label": "Built-in display",
+      "block": 0,
+      "slots": [
+        {
+          "slot": 1,
+          "name": "ai",
+          "hidden": false,
+          "id": 1
+        },
+        {
+          "slot": 2,
+          "name": "spotify",
+          "hidden": false,
+          "id": 2
+        },
+        {
+          "slot": 3,
+          "name": "",
+          "hidden": true,
+          "id": 3
+        },
+        {
+          "slot": 4,
+          "name": "",
+          "hidden": true,
+          "id": 4
+        },
+        {
+          "slot": 5,
+          "name": "",
+          "hidden": true,
+          "id": 5
+        },
+        {
+          "slot": 6,
+          "name": "",
+          "hidden": true,
+          "id": 6
+        },
+        {
+          "slot": 7,
+          "name": "",
+          "hidden": true,
+          "id": 7
+        },
+        {
+          "slot": 8,
+          "name": "",
+          "hidden": true,
+          "id": 8
+        },
+        {
+          "slot": 9,
+          "name": "",
+          "hidden": true,
+          "id": 9
+        },
+        {
+          "slot": 10,
+          "name": "",
+          "hidden": true,
+          "id": 10
+        }
+      ]
+    },
+    {
+      "output": "DP-6",
+      "label": "DELL P2720DC",
+      "block": 1,
+      "slots": [
+        {
+          "slot": 1,
+          "name": "terminal",
+          "hidden": false,
+          "id": 11
+        },
+        {
+          "slot": 2,
+          "name": "browser",
+          "hidden": false,
+          "id": 12
+        },
+        {
+          "slot": 3,
+          "name": "editor",
+          "hidden": false,
+          "id": 13
+        },
+        {
+          "slot": 4,
+          "name": "remote",
+          "hidden": false,
+          "id": 14
+        },
+        {
+          "slot": 5,
+          "name": "portal",
+          "hidden": false,
+          "id": 15
+        },
+        {
+          "slot": 6,
+          "name": "",
+          "hidden": true,
+          "id": 16
+        },
+        {
+          "slot": 7,
+          "name": "",
+          "hidden": true,
+          "id": 17
+        },
+        {
+          "slot": 8,
+          "name": "",
+          "hidden": true,
+          "id": 18
+        },
+        {
+          "slot": 9,
+          "name": "",
+          "hidden": true,
+          "id": 19
+        },
+        {
+          "slot": 10,
+          "name": "",
+          "hidden": true,
+          "id": 20
+        }
+      ]
+    },
+    {
+      "output": "DP-7",
+      "label": "DELL P2720D",
+      "block": 2,
+      "slots": [
+        {
+          "slot": 1,
+          "name": "slack",
+          "hidden": false,
+          "id": 21
+        },
+        {
+          "slot": 2,
+          "name": "outlook",
+          "hidden": false,
+          "id": 22
+        },
+        {
+          "slot": 3,
+          "name": "teams",
+          "hidden": false,
+          "id": 23
+        },
+        {
+          "slot": 4,
+          "name": "",
+          "hidden": true,
+          "id": 24
+        },
+        {
+          "slot": 5,
+          "name": "",
+          "hidden": true,
+          "id": 25
+        },
+        {
+          "slot": 6,
+          "name": "",
+          "hidden": true,
+          "id": 26
+        },
+        {
+          "slot": 7,
+          "name": "",
+          "hidden": true,
+          "id": 27
+        },
+        {
+          "slot": 8,
+          "name": "",
+          "hidden": true,
+          "id": 28
+        },
+        {
+          "slot": 9,
+          "name": "",
+          "hidden": true,
+          "id": 29
+        },
+        {
+          "slot": 10,
+          "name": "",
+          "hidden": true,
+          "id": 30
+        }
+      ]
+    }
   ],
   "assignments": [
     {
-      "workspace": "8",
-      "name": "ai",
-      "id": 8,
-      "output": "eDP-1",
-      "source": "ai"
-    },
-    {
-      "workspace": "10",
-      "name": "spotify",
-      "id": 10,
-      "output": "eDP-1",
-      "source": "spotify"
-    },
-    {
-      "workspace": "1",
-      "name": "terminal",
       "id": 1,
-      "output": "DP-4",
-      "source": "terminal"
+      "slot": 1,
+      "name": "ai",
+      "hidden": false,
+      "output": "eDP-1",
+      "label": "Built-in display"
     },
     {
-      "workspace": "2",
-      "name": "browser",
       "id": 2,
-      "output": "DP-4",
-      "source": "browser"
+      "slot": 2,
+      "name": "spotify",
+      "hidden": false,
+      "output": "eDP-1",
+      "label": "Built-in display"
     },
     {
-      "workspace": "3",
-      "name": "editor",
       "id": 3,
-      "output": "DP-4",
-      "source": "editor"
+      "slot": 3,
+      "name": "",
+      "hidden": true,
+      "output": "eDP-1",
+      "label": "Built-in display"
     },
     {
-      "workspace": "4",
-      "name": "remote",
       "id": 4,
-      "output": "DP-4",
-      "source": "remote"
+      "slot": 4,
+      "name": "",
+      "hidden": true,
+      "output": "eDP-1",
+      "label": "Built-in display"
     },
     {
-      "workspace": "9",
-      "name": "portal",
-      "id": 9,
-      "output": "DP-4",
-      "source": "portal"
-    },
-    {
-      "workspace": "5",
-      "name": "slack",
       "id": 5,
-      "output": "DP-5",
-      "source": "slack"
+      "slot": 5,
+      "name": "",
+      "hidden": true,
+      "output": "eDP-1",
+      "label": "Built-in display"
     },
     {
-      "workspace": "6",
-      "name": "outlook",
       "id": 6,
-      "output": "DP-5",
-      "source": "outlook"
+      "slot": 6,
+      "name": "",
+      "hidden": true,
+      "output": "eDP-1",
+      "label": "Built-in display"
     },
     {
-      "workspace": "7",
-      "name": "teams",
       "id": 7,
-      "output": "DP-5",
-      "source": "teams"
+      "slot": 7,
+      "name": "",
+      "hidden": true,
+      "output": "eDP-1",
+      "label": "Built-in display"
+    },
+    {
+      "id": 8,
+      "slot": 8,
+      "name": "",
+      "hidden": true,
+      "output": "eDP-1",
+      "label": "Built-in display"
+    },
+    {
+      "id": 9,
+      "slot": 9,
+      "name": "",
+      "hidden": true,
+      "output": "eDP-1",
+      "label": "Built-in display"
+    },
+    {
+      "id": 10,
+      "slot": 10,
+      "name": "",
+      "hidden": true,
+      "output": "eDP-1",
+      "label": "Built-in display"
+    },
+    {
+      "id": 11,
+      "slot": 1,
+      "name": "terminal",
+      "hidden": false,
+      "output": "DP-6",
+      "label": "DELL P2720DC"
+    },
+    {
+      "id": 12,
+      "slot": 2,
+      "name": "browser",
+      "hidden": false,
+      "output": "DP-6",
+      "label": "DELL P2720DC"
+    },
+    {
+      "id": 13,
+      "slot": 3,
+      "name": "editor",
+      "hidden": false,
+      "output": "DP-6",
+      "label": "DELL P2720DC"
+    },
+    {
+      "id": 14,
+      "slot": 4,
+      "name": "remote",
+      "hidden": false,
+      "output": "DP-6",
+      "label": "DELL P2720DC"
+    },
+    {
+      "id": 15,
+      "slot": 5,
+      "name": "portal",
+      "hidden": false,
+      "output": "DP-6",
+      "label": "DELL P2720DC"
+    },
+    {
+      "id": 16,
+      "slot": 6,
+      "name": "",
+      "hidden": true,
+      "output": "DP-6",
+      "label": "DELL P2720DC"
+    },
+    {
+      "id": 17,
+      "slot": 7,
+      "name": "",
+      "hidden": true,
+      "output": "DP-6",
+      "label": "DELL P2720DC"
+    },
+    {
+      "id": 18,
+      "slot": 8,
+      "name": "",
+      "hidden": true,
+      "output": "DP-6",
+      "label": "DELL P2720DC"
+    },
+    {
+      "id": 19,
+      "slot": 9,
+      "name": "",
+      "hidden": true,
+      "output": "DP-6",
+      "label": "DELL P2720DC"
+    },
+    {
+      "id": 20,
+      "slot": 10,
+      "name": "",
+      "hidden": true,
+      "output": "DP-6",
+      "label": "DELL P2720DC"
+    },
+    {
+      "id": 21,
+      "slot": 1,
+      "name": "slack",
+      "hidden": false,
+      "output": "DP-7",
+      "label": "DELL P2720D"
+    },
+    {
+      "id": 22,
+      "slot": 2,
+      "name": "outlook",
+      "hidden": false,
+      "output": "DP-7",
+      "label": "DELL P2720D"
+    },
+    {
+      "id": 23,
+      "slot": 3,
+      "name": "teams",
+      "hidden": false,
+      "output": "DP-7",
+      "label": "DELL P2720D"
+    },
+    {
+      "id": 24,
+      "slot": 4,
+      "name": "",
+      "hidden": true,
+      "output": "DP-7",
+      "label": "DELL P2720D"
+    },
+    {
+      "id": 25,
+      "slot": 5,
+      "name": "",
+      "hidden": true,
+      "output": "DP-7",
+      "label": "DELL P2720D"
+    },
+    {
+      "id": 26,
+      "slot": 6,
+      "name": "",
+      "hidden": true,
+      "output": "DP-7",
+      "label": "DELL P2720D"
+    },
+    {
+      "id": 27,
+      "slot": 7,
+      "name": "",
+      "hidden": true,
+      "output": "DP-7",
+      "label": "DELL P2720D"
+    },
+    {
+      "id": 28,
+      "slot": 8,
+      "name": "",
+      "hidden": true,
+      "output": "DP-7",
+      "label": "DELL P2720D"
+    },
+    {
+      "id": 29,
+      "slot": 9,
+      "name": "",
+      "hidden": true,
+      "output": "DP-7",
+      "label": "DELL P2720D"
+    },
+    {
+      "id": 30,
+      "slot": 10,
+      "name": "",
+      "hidden": true,
+      "output": "DP-7",
+      "label": "DELL P2720D"
     }
   ]
 }
