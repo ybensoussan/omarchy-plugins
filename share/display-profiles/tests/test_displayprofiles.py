@@ -410,8 +410,10 @@ class MenuAndSwitchTests(Base):
         dp.sync_menu(dp.plan(profile, self.catalog, live, PlanTests.BLOCKS), [])
         text = dp.MENU.read_text()
         self.assertNotIn(".old", text)
-        self.assertIn('"trigger.workspaces.dp-6-1": {"icon": "󰙀", "label": "Terminal", '
-                      '"description": "DELL P2720DC · Super+1", "action": "omarchy-workspace-switch DP-6:1"}', text)
+        self.assertIn('"trigger.workspaces.dp-6-1": {"icon": "󰙀", "label": "Terminal · Middle", '
+                      '"description": "Super+1 on DELL P2720DC (DP-6)", "action": "omarchy-workspace-switch DP-6:1"}', text)
+        self.assertIn('"label": "Ai · Laptop"', text)
+        self.assertIn('"label": "Teams · Right"', text)
         self.assertIn('"trigger.move-window-workspace.dp-7-3": ', text)
         self.assertIn('"action": "omarchy-workspace-move-window DP-7:3"', text)
         self.assertNotIn("DP-6:2", text)  # hidden
@@ -422,6 +424,16 @@ class MenuAndSwitchTests(Base):
         dp.sync_menu(dp.plan(profile2, self.catalog, [SHARP], PlanTests.BLOCKS), [])
         dp.sync_menu(dp.plan(profile, self.catalog, live, PlanTests.BLOCKS), [])
         self.assertIn("DP-6:1", dp.MENU.read_text())
+
+    def test_identical_monitors_are_told_apart_by_position(self):
+        dp.write_text(dp.MENU, '{\n  "trigger.workspaces": {"label":"Workspaces"},\n}\n')
+        twin = dict(DELL_D, name="DP-8", serial="ZZZ", description="Dell Inc. DELL P2720D ZZZ", x=5560)
+        profile = dp.normalize_profile({"name": "x", "monitors": [
+            v2_monitor(DELL_D, ["slack"]), v2_monitor(twin, ["mail"])]}, self.catalog)
+        dp.sync_menu(dp.plan(profile, self.catalog, [DELL_D, twin], {"DP-7": 2, "DP-8": 3}), [])
+        text = dp.MENU.read_text()
+        self.assertIn('"label": "Slack · Left"', text)
+        self.assertIn('"label": "Mail · Right"', text)
 
     def test_resolve_by_reference_name_or_id(self):
         profile, live = self.desk()

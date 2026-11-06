@@ -725,14 +725,29 @@ def sync_menu(the_plan, profiles):
         return
     lines = MENU.read_text().splitlines()
     visible = [t for t in the_plan["targets"] if not t["hidden"]]
+    # The menu shows descriptions only while searching and its card is narrow, so a short
+    # monitor name goes in the label: Laptop for the built-in panel, otherwise the position.
+    order = the_plan["monitors"]  # already left to right
+    positions = {2: ["Left", "Right"], 3: ["Left", "Middle", "Right"]}.get(len(order))
+    short = {}
+    for index, m in enumerate(order):
+        if is_internal(m["output"]):
+            short[m["output"]] = "Laptop"
+        elif len(order) == 1:
+            short[m["output"]] = "Screen"
+        else:
+            short[m["output"]] = positions[index] if positions else "Screen %d" % (index + 1)
+
+    def monitor_name(t):
+        return short.get(t["output"], t["output"])
 
     def entries(prefix, command):
         result = []
         for t in visible:
             key = "%s.%s-%s" % (prefix, re.sub(r"[^a-z0-9-]", "-", t["output"].lower()), t["key"])
-            label = title(t["name"]) if t["name"] else "Workspace " + t["key"]
+            label = "%s · %s" % (title(t["name"]) if t["name"] else "Workspace " + t["key"], monitor_name(t))
             result.append('  "%s": %s,' % (key, json.dumps(
-                {"icon": "󰙀", "label": label, "description": "%s · Super+%s" % (t["label"], t["key"]),
+                {"icon": "󰙀", "label": label, "description": "Super+%s on %s (%s)" % (t["key"], t["label"], t["output"]),
                  "action": "%s %s:%d" % (command, t["output"], t["slot"])}, ensure_ascii=False)))
         return result
 
