@@ -99,3 +99,16 @@ test("single monitor grid: left/right step a tile, up/down a grid row", () => {
   assert.deepEqual(plain(M.step(cols, { col: 0, row: 2 }, 0, -1, "", 2)), { col: 0, row: 0 })
   assert.deepEqual(plain(M.step(cols, { col: 0, row: 2 }, -1, 0, "", 2)), { col: 0, row: 2 })  // left edge
 })
+
+test("short terms do not match inside connectors or titles", () => {
+  const cols = M.buildColumns(order, blocks, [{ class: "foot", title: "fixed bug", workspace: { id: 1 } }], monitors)
+  const laptop = cols[0]
+  // "ed" is in "eDP-1" and inside "fixed", but only Editor should match.
+  assert.ok(!M.matches(laptop.tiles[0], laptop, "ed"))
+  assert.ok(!M.matches(laptop.tiles[1], laptop, "ed"))
+  assert.ok(M.matches(cols[1].tiles[2], cols[1], "ed"))
+  // Word starts in titles and monitor names still work.
+  assert.ok(M.matches(laptop.tiles[0], laptop, "bug"))
+  assert.ok(M.matches(cols[2].tiles[0], cols[2], "rig"))
+  assert.ok(M.matches(laptop.tiles[0], laptop, "built"))
+})

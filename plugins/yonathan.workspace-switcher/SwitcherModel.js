@@ -94,12 +94,23 @@ function terms(query) {
   return String(query || "").toLowerCase().split(/\s+/).filter(function(t) { return t })
 }
 
+// A term matches when it is part of the workspace's name or an app class (substring), or the
+// start of a word in a window title or the monitor's names. Connectors (eDP-1, DP-6) are left
+// out: "ed" would otherwise match every workspace on the laptop.
+function words(text) {
+  return String(text || "").toLowerCase().split(/[^a-z0-9]+/).filter(function(w) { return w })
+}
+
 function matches(tile, column, query) {
   var wanted = terms(query)
   if (!wanted.length) return true
-  var hay = [tile.name, tile.label, column.short, column.label, column.output]
-    .concat(tile.apps.map(function(a) { return a.cls + " " + a.title })).join(" ").toLowerCase()
-  return wanted.every(function(t) { return hay.indexOf(t) >= 0 })
+  var inside = [tile.name, tile.label].concat(tile.apps.map(function(a) { return a.cls })).join(" ").toLowerCase()
+  var starts = words([column.short, column.label].concat(tile.apps.map(function(a) { return a.title })).join(" "))
+  return wanted.every(function(t) {
+    if (inside.indexOf(t) >= 0) return true
+    for (var i = 0; i < starts.length; i++) if (starts[i].indexOf(t) === 0) return true
+    return false
+  })
 }
 
 function matchingRows(column, query) {
