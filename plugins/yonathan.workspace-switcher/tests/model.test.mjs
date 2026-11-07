@@ -112,3 +112,11 @@ test("short terms do not match inside connectors or titles", () => {
   assert.ok(M.matches(cols[2].tiles[0], cols[2], "rig"))
   assert.ok(M.matches(laptop.tiles[0], laptop, "built"))
 })
+
+test("monitor colours come from the theme palette", () => {
+  const P = {}
+  vm.runInNewContext(source + "\nObject.assign(out, { parsePalette, monitorColor })", { out: P })
+  const palette = P.parsePalette('blue = "#7d82d9"\ngreen = "#92a593"\nmagenta = "#c89dc1"\n')
+  assert.equal(P.monitorColor(palette, 1), "#92a593")
+  assert.equal(P.monitorColor([], 0), "#7aa2f7")
+})

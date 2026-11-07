@@ -118,3 +118,12 @@ test("labels", () => {
   assert.equal(L.percent(1.6), "160%")
   assert.equal(L.percent(1.333333), "133.3%")
 })
+
+test("monitor colours come from the theme palette", () => {
+  const P = {}
+  vm.runInNewContext(source + "\nObject.assign(out, { parsePalette, monitorColor })", { out: P })
+  const palette = P.parsePalette('accent = "#7d82d9"\nred = "#ED5B5A"\ngreen = "#92a593"\nblue = "#7d82d9"\nmagenta = "#c89dc1"\n')
+  assert.deepEqual(Array.from(palette), ["#7d82d9", "#92a593", "#c89dc1", "#ED5B5A"])
+  assert.equal(P.monitorColor(palette, 5), "#92a593")
+  assert.equal(P.parsePalette("foreground = \"#fff\"").length, 7)
+})

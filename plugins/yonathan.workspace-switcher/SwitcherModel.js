@@ -191,3 +191,24 @@ function slotInColumn(columns, sel, slot) {
   for (var r = 0; r < column.tiles.length; r++) if (column.tiles[r].slot === slot) return { col: sel.col, row: r }
   return null
 }
+
+// Monitor colours --------------------------------------------------------------
+// Taken from the theme's named palette (~/.local/state/omarchy/current/theme/colors.toml), so
+// monitors follow the theme; a monitor keeps the colour of its place in the profile.
+var PALETTE_NAMES = ["blue", "green", "magenta", "yellow", "cyan", "orange", "red"]
+var FALLBACK_PALETTE = ["#7aa2f7", "#9ece6a", "#bb9af7", "#e0af68", "#7dcfff", "#ff9e64", "#f7768e"]
+
+function parsePalette(text) {
+  var found = {}
+  String(text || "").split("\n").forEach(function(line) {
+    var m = /^\s*([a-z_]+)\s*=\s*"(#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?)"/.exec(line)
+    if (m) found[m[1]] = m[2]
+  })
+  var palette = PALETTE_NAMES.filter(function(n) { return found[n] }).map(function(n) { return found[n] })
+  return palette.length >= 3 ? palette : FALLBACK_PALETTE
+}
+
+function monitorColor(palette, index) {
+  var list = palette && palette.length ? palette : FALLBACK_PALETTE
+  return list[Math.abs(index || 0) % list.length]
+}

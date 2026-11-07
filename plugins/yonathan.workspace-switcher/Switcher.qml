@@ -78,6 +78,24 @@ Item {
     return out
   }
 
+  // Each monitor's colour from the theme palette, by its place in the profile, as in the
+  // Displays & Workspaces manager; re-read when the theme changes.
+  property var palette: []
+  function monitorColor(index) { return M.monitorColor(root.palette, index) }
+  FileView {
+    id: paletteFile
+    path: Color.currentThemePath + "/colors.toml"
+    watchChanges: true
+    printErrors: false
+    onFileChanged: reload()
+    onLoaded: root.palette = M.parsePalette(text())
+    onLoadFailed: root.palette = []
+  }
+  Connections {
+    target: Color
+    function onAccentChanged() { paletteFile.reload() }
+  }
+
   // ---- data --------------------------------------------------------------
   FileView {
     path: Quickshell.env("HOME") + "/.config/hypr/workspace-order.json"
@@ -273,6 +291,7 @@ Item {
                 id: column
                 readonly property var info: columnBox.modelData
                 readonly property int colIndex: columnBox.index
+                readonly property color tint: root.monitorColor(info.index)
                 width: root.colWidth * root.tilesPerRow + root.tileGap * (root.tilesPerRow - 1)
                 spacing: root.tileGap
 
@@ -286,7 +305,7 @@ Item {
                     textFormat: Text.PlainText
                     text: column.info.internal ? "󰌢" : "󰍹"
                     rotation: column.info.portrait ? 90 : 0
-                    color: column.info.focused ? root.foreground : Qt.darker(root.foreground, 1.4)
+                    color: column.tint
                     font.family: root.font
                     font.pixelSize: Style.font.body
                   }
@@ -298,6 +317,13 @@ Item {
                     fontFamily: root.font
                     text: column.info.short.toUpperCase() + "  ·  " + column.info.label
                   }
+                }
+
+                Rectangle {
+                  width: parent.width
+                  height: Math.max(2, Style.spacing.hairline * 2)
+                  color: column.tint
+                  opacity: column.info.focused ? 1 : 0.7
                 }
 
                 Grid {
@@ -353,7 +379,7 @@ Item {
                         width: Style.space(36)
                         horizontalAlignment: Text.AlignHCenter
                         text: row.modelData.key
-                        color: row.ink
+                        color: row.modelData.shown && !row.hasCursor ? column.tint : row.ink
                         opacity: row.hasCursor || row.modelData.shown ? 1 : 0.45
                         font.family: root.font
                         font.pixelSize: Style.font.iconLarge
@@ -428,8 +454,8 @@ Item {
                           horizontalAlignment: Text.AlignHCenter
                           textFormat: Text.PlainText
                           text: row.modelData.shown ? "●" : ""
-                          color: row.ink
-                          opacity: row.modelData.focused ? 1 : 0.45
+                          color: column.tint
+                          opacity: row.modelData.focused ? 1 : 0.6
                           font.family: root.font
                           font.pixelSize: Style.font.caption
                         }

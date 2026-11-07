@@ -84,8 +84,23 @@ Item {
     for (var i = 0; i < connected.length; i++) if (connected[i].name === m._live) return connected[i]
     return null
   }
-  // Monitors are told apart by label, not colour: a neutral tint in the theme's foreground.
-  function colorFor(index, alpha) { return Util.alpha(root.fg, alpha * 0.5) }
+  // Each monitor has a colour from the theme's palette, by its place in the profile (the workspace
+  // switcher uses the same), re-read when the theme changes.
+  property var palette: []
+  function colorFor(index, alpha) { return Util.alpha(L.monitorColor(root.palette, index), alpha) }
+  FileView {
+    id: paletteFile
+    path: Color.currentThemePath + "/colors.toml"
+    watchChanges: true
+    printErrors: false
+    onFileChanged: reload()
+    onLoaded: root.palette = L.parsePalette(text())
+    onLoadFailed: root.palette = []
+  }
+  Connections {
+    target: Color
+    function onAccentChanged() { paletteFile.reload() }
+  }
   function catalogEntry(name) {
     if (!name) return null
     for (var i = 0; i < catalog.length; i++) if (catalog[i].name.toLowerCase() === String(name).toLowerCase()) return catalog[i]
@@ -452,7 +467,7 @@ Item {
           radius: root.r
           color: Qt.alpha(root.bg, 0.92)
           border.width: 4
-          border.color: label.monitorIndex >= 0 ? root.accent : root.dim
+          border.color: label.monitorIndex >= 0 ? root.colorFor(label.monitorIndex, 1) : root.dim
           Column {
             id: idCol
             anchors.centerIn: parent
@@ -653,7 +668,7 @@ Item {
 
               Row {
                 spacing: 8
-                Text { text: "󰍹"; color: root.dim; font.family: root.font; font.pixelSize: Style.font.title; anchors.verticalCenter: parent.verticalCenter }
+                Text { text: "󰍹"; color: root.colorFor(root.selMonitor, 1); font.family: root.font; font.pixelSize: Style.font.title; anchors.verticalCenter: parent.verticalCenter }
                 Text { text: monInspector.m ? monInspector.m.label : ""; color: root.fg; font.family: root.font; font.pixelSize: Style.font.heading; font.bold: true; width: 240; elide: Text.ElideRight }
               }
               Text {
@@ -751,7 +766,7 @@ Item {
 
               Row {
                 spacing: 8
-                Text { text: "󰍹"; color: root.dim; font.family: root.font; font.pixelSize: Style.font.title; anchors.verticalCenter: parent.verticalCenter }
+                Text { text: "󰍹"; color: root.colorFor(root.selMonitor, 1); font.family: root.font; font.pixelSize: Style.font.title; anchors.verticalCenter: parent.verticalCenter }
                 Text {
                   width: 240; elide: Text.ElideRight
                   text: wsInspector.mon ? "Workspace " + L.slotKey(root.selSlot) + " on " + wsInspector.mon.label : ""
@@ -982,9 +997,9 @@ Item {
               z: dragging ? 10 : selected ? 5 : 1
               radius: root.r
               opacity: m && m.enabled ? (online ? 1 : 0.6) : 0.4
-              color: dragging ? root.hoverFill : selected ? root.selFill : root.faint
+              color: root.colorFor(index, dragging ? 0.36 : selected ? 0.32 : 0.22)
               border.width: selected || dragging ? 2 : 1
-              border.color: bad ? root.red : selected ? root.selInk : root.lineStrong
+              border.color: bad ? root.red : selected ? root.selInk : root.colorFor(index, 0.8)
 
               Column {
                 anchors.centerIn: parent
@@ -1153,14 +1168,14 @@ Item {
                   radius: root.r
                   color: "transparent"
                   border.width: 1
-                  border.color: root.line
+                  border.color: root.colorFor(column.monitorIndex, 0.7)
                   opacity: column.mon && column.mon.enabled ? 1 : 0.55
 
                   // column header
                   Rectangle {
                     anchors { left: parent.left; right: parent.right; top: parent.top }
                     height: 38; radius: root.r
-                    color: root.faint
+                    color: root.colorFor(column.monitorIndex, 0.24)
                     Column {
                       anchors.left: parent.left; anchors.leftMargin: 10; anchors.right: parent.right; anchors.rightMargin: 10
                       anchors.verticalCenter: parent.verticalCenter
