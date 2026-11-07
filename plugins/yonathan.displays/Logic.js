@@ -8,7 +8,6 @@ var ROTATIONS = [
   { t: 2, label: "Landscape (flipped)", short: "180°" },
   { t: 3, label: "Portrait (flipped)", short: "270°" }
 ]
-var HUES = [210, 150, 280, 30, 340, 90, 190, 0]
 
 function clone(value) { return JSON.parse(JSON.stringify(value)) }
 
@@ -299,4 +298,3 @@ function title(name) {
   return String(name).replace(/[-_]/g, " ").replace(/\b\w/g, function(c) { return c.toUpperCase() })
 }
 
-function hue(index) { return HUES[index % HUES.length] / 360 }

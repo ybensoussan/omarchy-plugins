@@ -3,6 +3,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import QtQuick
 import qs.Commons
+import qs.Ui
 import "Logic.js" as L
 
 // Displays & Workspaces: one place to arrange monitors, name and show/hide each monitor's
@@ -19,9 +20,17 @@ Item {
   readonly property color fg: Color.menu.text
   readonly property color accent: Color.accent
   readonly property color red: Color.urgent
-  readonly property string font: Style.font.menuFamily
+  readonly property string font: Style.font.family
   readonly property color dim: Qt.alpha(fg, 0.55)
-  readonly property color faint: Qt.alpha(fg, 0.08)
+  // Fills and lines from the theme's [controls] tokens, as Omarchy's panels use them.
+  readonly property color faint: Style.normalFillFor(fg, accent)
+  readonly property color hoverFill: Style.hoverFillFor(fg, accent)
+  readonly property color selFill: Style.selectedFillFor(fg, accent)
+  readonly property color selInk: Style.selectedStateColor(fg, accent)
+  readonly property color line: Util.alpha(fg, 0.12)
+  readonly property color lineStrong: Util.alpha(fg, Style.normalBorderAlpha)
+  readonly property int r: Style.cornerRadius
+  readonly property var popupBorder: Border.surfaceSpec("popups", "border", Color.popups.border, Math.max(1, Style.space(2)))
 
   // ---- backend state ------------------------------------------------------
   property var st: null
@@ -75,7 +84,8 @@ Item {
     for (var i = 0; i < connected.length; i++) if (connected[i].name === m._live) return connected[i]
     return null
   }
-  function colorFor(index, alpha) { return Qt.hsla(L.hue(index), 0.55, 0.62, alpha) }
+  // Monitors are told apart by label, not colour: a neutral tint in the theme's foreground.
+  function colorFor(index, alpha) { return Util.alpha(root.fg, alpha * 0.5) }
   function catalogEntry(name) {
     if (!name) return null
     for (var i = 0; i < catalog.length; i++) if (catalog[i].name.toLowerCase() === String(name).toLowerCase()) return catalog[i]
@@ -439,10 +449,10 @@ Item {
           anchors.centerIn: parent
           width: idCol.implicitWidth + 64
           height: idCol.implicitHeight + 40
-          radius: 18
+          radius: root.r
           color: Qt.alpha(root.bg, 0.92)
           border.width: 4
-          border.color: label.monitorIndex >= 0 ? root.colorFor(label.monitorIndex, 1) : root.dim
+          border.color: label.monitorIndex >= 0 ? root.accent : root.dim
           Column {
             id: idCol
             anchors.centerIn: parent
@@ -500,7 +510,8 @@ Item {
         id: header
         anchors { left: parent.left; right: parent.right; top: parent.top }
         height: 58
-        color: Qt.darker(root.bg, 1.12)
+        color: "transparent"
+        PanelSeparator { anchors.bottom: parent.bottom; foreground: root.fg }
         Row {
           anchors.left: parent.left; anchors.leftMargin: 18; anchors.verticalCenter: parent.verticalCenter
           spacing: 12
@@ -530,7 +541,8 @@ Item {
         id: sidebar
         anchors { left: parent.left; top: header.bottom; bottom: footer.top }
         width: 244
-        color: Qt.darker(root.bg, 1.06)
+        color: "transparent"
+        Rectangle { anchors { right: parent.right; top: parent.top; bottom: parent.bottom } width: 1; color: root.line }
 
         Column {
           anchors.fill: parent
@@ -539,7 +551,7 @@ Item {
 
           Item {
             width: parent.width; height: 28
-            Text { text: "PROFILES"; color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption; font.bold: true; font.letterSpacing: 1.2; anchors.verticalCenter: parent.verticalCenter }
+            SectionLabel { text: "PROFILES"; anchors.verticalCenter: parent.verticalCenter }
             Btn { anchors.right: parent.right; compact: true; icon: "󰐕"; text: "New"; enabled: !!root.st; onClicked: root.newFromCurrent(false) }
           }
 
@@ -552,10 +564,10 @@ Item {
               readonly property bool isActive: root.activeProfile === modelData.name
               width: parent.width
               height: 58
-              radius: 8
-              color: selected ? Qt.alpha(root.accent, 0.16) : pma.containsMouse ? root.faint : "transparent"
+              radius: root.r
+              color: selected ? root.selFill : pma.containsMouse ? root.hoverFill : "transparent"
               border.width: selected ? 1 : 0
-              border.color: Qt.alpha(root.accent, 0.6)
+              border.color: "transparent"
               Column {
                 anchors.left: parent.left; anchors.leftMargin: 12; anchors.right: applyBtn.left; anchors.rightMargin: 6
                 anchors.verticalCenter: parent.verticalCenter
@@ -570,8 +582,8 @@ Item {
                   }
                   Rectangle {
                     id: activeBadge
-                    visible: prow.isActive; radius: 4; height: 16; width: activeText.implicitWidth + 10
-                    color: Qt.alpha(root.accent, 0.3); anchors.verticalCenter: parent.verticalCenter
+                    visible: prow.isActive; radius: root.r; height: 16; width: activeText.implicitWidth + 10
+                    color: root.selFill; border.width: 1; border.color: root.selInk; anchors.verticalCenter: parent.verticalCenter
                     Text { id: activeText; anchors.centerIn: parent; text: "ACTIVE"; color: root.fg; font.family: root.font; font.pixelSize: Style.font.caption - 1; font.bold: true }
                   }
                 }
@@ -596,8 +608,8 @@ Item {
 
           Rectangle {
             visible: root.isNew
-            width: parent.width; height: 40; radius: 8
-            color: Qt.alpha(root.accent, 0.16); border.width: 1; border.color: Qt.alpha(root.accent, 0.6)
+            width: parent.width; height: 40; radius: root.r
+            color: root.selFill
             Text { anchors.left: parent.left; anchors.leftMargin: 12; anchors.verticalCenter: parent.verticalCenter; text: "✚ " + (root.draft ? root.title(root.draft.name) : "") + "  (unsaved)"; color: root.fg; font.family: root.font; font.pixelSize: Style.font.body; font.bold: true }
           }
 
@@ -615,7 +627,8 @@ Item {
         id: inspector
         anchors { right: parent.right; top: header.bottom; bottom: footer.top }
         width: 300
-        color: Qt.darker(root.bg, 1.06)
+        color: "transparent"
+        Rectangle { anchors { left: parent.left; top: parent.top; bottom: parent.bottom } width: 1; color: root.line }
 
         Flickable {
           anchors.fill: parent
@@ -640,7 +653,7 @@ Item {
 
               Row {
                 spacing: 8
-                Rectangle { width: 12; height: 12; radius: 3; color: root.colorFor(root.selMonitor, 1); anchors.verticalCenter: parent.verticalCenter }
+                Text { text: "󰍹"; color: root.dim; font.family: root.font; font.pixelSize: Style.font.title; anchors.verticalCenter: parent.verticalCenter }
                 Text { text: monInspector.m ? monInspector.m.label : ""; color: root.fg; font.family: root.font; font.pixelSize: Style.font.heading; font.bold: true; width: 240; elide: Text.ElideRight }
               }
               Text {
@@ -738,7 +751,7 @@ Item {
 
               Row {
                 spacing: 8
-                Rectangle { width: 12; height: 12; radius: 3; color: root.colorFor(root.selMonitor, 1); anchors.verticalCenter: parent.verticalCenter }
+                Text { text: "󰍹"; color: root.dim; font.family: root.font; font.pixelSize: Style.font.title; anchors.verticalCenter: parent.verticalCenter }
                 Text {
                   width: 240; elide: Text.ElideRight
                   text: wsInspector.mon ? "Workspace " + L.slotKey(root.selSlot) + " on " + wsInspector.mon.label : ""
@@ -777,7 +790,7 @@ Item {
                   required property int index
                   width: wsInspector.width; spacing: 3
                   Rectangle {
-                    width: parent.width; height: 28; radius: 6; color: root.faint
+                    width: parent.width; height: 28; radius: root.r; color: root.faint
                     Text { anchors.left: parent.left; anchors.leftMargin: 8; anchors.right: rm.left; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; text: modelData; color: root.fg; font.family: "monospace"; font.pixelSize: Style.font.caption }
                     Btn {
                       id: rm; compact: true; icon: "󰅖"; anchors.right: parent.right; anchors.rightMargin: 3; anchors.verticalCenter: parent.verticalCenter
@@ -851,7 +864,7 @@ Item {
                 model: root.notInProfile
                 delegate: Rectangle {
                   required property var modelData
-                  width: 272; height: 44; radius: 8; color: root.faint
+                  width: 272; height: 44; radius: root.r; color: root.faint
                   Column {
                     anchors.left: parent.left; anchors.leftMargin: 10; anchors.verticalCenter: parent.verticalCenter
                     Text { text: modelData.label; color: root.fg; font.family: root.font; font.pixelSize: Style.font.body }
@@ -917,10 +930,10 @@ Item {
           id: canvas
           anchors { left: parent.left; right: parent.right; top: profileBar.bottom; topMargin: 10 }
           height: Math.max(260, main.height * 0.46)
-          radius: 10
-          color: Qt.darker(root.bg, 1.3)
+          radius: root.r
+          color: root.faint
           border.width: 1
-          border.color: Qt.alpha(root.fg, 0.1)
+          border.color: root.line
           clip: true
 
           readonly property real pad: 34
@@ -967,11 +980,11 @@ Item {
               width: Math.max(lr.w * canvas.zoom, 20)
               height: Math.max(lr.h * canvas.zoom, 20)
               z: dragging ? 10 : selected ? 5 : 1
-              radius: 6
+              radius: root.r
               opacity: m && m.enabled ? (online ? 1 : 0.6) : 0.4
-              color: root.colorFor(index, dragging ? 0.3 : 0.18)
+              color: dragging ? root.hoverFill : selected ? root.selFill : root.faint
               border.width: selected || dragging ? 2 : 1
-              border.color: bad ? root.red : selected ? root.accent : root.colorFor(index, 0.85)
+              border.color: bad ? root.red : selected ? root.selInk : root.lineStrong
 
               Column {
                 anchors.centerIn: parent
@@ -997,7 +1010,7 @@ Item {
                     model: card.m ? L.visibleSlots(card.m) : []
                     delegate: Rectangle {
                       required property var modelData
-                      width: chip.implicitWidth + 8; height: 16; radius: 4; color: Qt.alpha(root.bg, 0.6)
+                      width: chip.implicitWidth + 8; height: 16; radius: root.r; color: root.faint
                       Text { id: chip; anchors.centerIn: parent; text: L.slotKey(modelData.slot) + (modelData.name ? " " + modelData.name : ""); color: root.fg; font.family: root.font; font.pixelSize: Style.font.caption - 1 }
                     }
                   }
@@ -1079,8 +1092,8 @@ Item {
             visible: root.tryLeft > 0
             anchors { top: parent.top; horizontalCenter: parent.horizontalCenter; topMargin: 10 }
             z: 30
-            width: tryRow.implicitWidth + 24; height: 40; radius: 8
-            color: root.bg; border.width: 1; border.color: root.accent
+            width: tryRow.implicitWidth + 24; height: 40; radius: root.r
+            color: Color.popups.background; border.width: 1; border.color: root.selInk
             Row {
               id: tryRow
               anchors.centerIn: parent
@@ -1101,7 +1114,7 @@ Item {
             id: boardHeader
             anchors { left: parent.left; right: parent.right; top: parent.top }
             height: 28
-            Text { id: wsTitle; text: "WORKSPACES"; color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption; font.bold: true; font.letterSpacing: 1.2; anchors.verticalCenter: parent.verticalCenter }
+            SectionLabel { id: wsTitle; text: "WORKSPACES"; anchors.verticalCenter: parent.verticalCenter }
             Text {
               anchors { left: wsTitle.right; leftMargin: 10; right: parent.right; verticalCenter: parent.verticalCenter }
               elide: Text.ElideRight
@@ -1137,17 +1150,17 @@ Item {
 
                   width: boardRow.colWidth
                   height: boardRow.height
-                  radius: 10
-                  color: Qt.alpha(root.fg, 0.035)
+                  radius: root.r
+                  color: "transparent"
                   border.width: 1
-                  border.color: root.colorFor(monitorIndex, 0.45)
+                  border.color: root.line
                   opacity: column.mon && column.mon.enabled ? 1 : 0.55
 
                   // column header
                   Rectangle {
                     anchors { left: parent.left; right: parent.right; top: parent.top }
-                    height: 38; radius: 10
-                    color: root.colorFor(column.monitorIndex, 0.16)
+                    height: 38; radius: root.r
+                    color: root.faint
                     Column {
                       anchors.left: parent.left; anchors.leftMargin: 10; anchors.right: parent.right; anchors.rightMargin: 10
                       anchors.verticalCenter: parent.verticalCenter
@@ -1199,10 +1212,10 @@ Item {
                           readonly property var entry: root.catalogEntry(modelData.name)
                           width: parent.width
                           height: column.rowH
-                          radius: 7
-                          color: selected ? Qt.alpha(root.accent, 0.2) : rowArea.containsMouse ? Qt.alpha(root.fg, 0.1) : Qt.alpha(root.fg, modelData.hidden ? 0.02 : 0.05)
+                          radius: root.r
+                          color: selected ? root.selFill : rowArea.containsMouse ? root.hoverFill : "transparent"
                           border.width: selected ? 1 : 0
-                          border.color: root.accent
+                          border.color: "transparent"
 
                           MouseArea {
                             id: rowArea
@@ -1216,8 +1229,9 @@ Item {
                           Rectangle {
                             id: badge
                             x: 6; anchors.verticalCenter: parent.verticalCenter
-                            width: 24; height: 20; radius: 5
-                            color: Qt.alpha(root.accent, wrow.modelData.hidden ? 0.08 : 0.25)
+                            width: 24; height: 20; radius: root.r
+                            color: wrow.modelData.hidden ? "transparent" : root.faint
+                            border.width: 1; border.color: root.line
                             Text {
                               anchors.centerIn: parent
                               text: L.slotKey(wrow.slot)
@@ -1259,8 +1273,8 @@ Item {
                           Rectangle {
                             id: eye
                             anchors.right: parent.right; anchors.rightMargin: 4; anchors.verticalCenter: parent.verticalCenter
-                            width: 26; height: 22; radius: 5
-                            color: eyeArea.containsMouse ? Qt.alpha(root.fg, 0.14) : "transparent"
+                            width: 26; height: 22; radius: root.r
+                            color: eyeArea.containsMouse ? root.hoverFill : "transparent"
                             Text {
                               anchors.centerIn: parent
                               text: wrow.modelData.hidden ? "󰈉" : "󰈈"
@@ -1291,7 +1305,8 @@ Item {
         id: footer
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
         height: 56
-        color: Qt.darker(root.bg, 1.12)
+        color: "transparent"
+        PanelSeparator { anchors.top: parent.top; foreground: root.fg }
         Text {
           anchors { left: parent.left; leftMargin: 18; right: actions.left; rightMargin: 16; verticalCenter: parent.verticalCenter }
           text: (root.busy ? "⟳  " : "") + (root.status || (root.check.errors.length ? root.check.errors[0] : ""))
@@ -1322,16 +1337,15 @@ Item {
         anchors.fill: parent
         visible: root.pickerPick !== null
         z: 2000
-        color: Qt.rgba(0, 0, 0, 0.55)
+        color: Color.menu.scrim
         MouseArea { anchors.fill: parent; onClicked: root.pickerPick = null }
-        Rectangle {
+        BorderSurface {
           anchors.centerIn: parent
           width: 420
           height: Math.min(parent.height - 120, pickerList.contentHeight + 70 + (root.pickerCustom ? 44 : 0))
-          radius: 12
-          color: root.bg
-          border.width: 1
-          border.color: Qt.alpha(root.fg, 0.2)
+          radius: root.r
+          color: Color.popups.background
+          borderSpec: root.popupBorder
           MouseArea { anchors.fill: parent }
           Text { id: pickerTitleText; x: 18; y: 16; text: root.pickerTitle; color: root.fg; font.family: root.font; font.pixelSize: Style.font.title; font.bold: true }
           Field {
@@ -1359,8 +1373,8 @@ Item {
               required property var modelData
               width: pickerList.width
               height: modelData.sub ? 44 : 34
-              radius: 7
-              color: modelData.current ? Qt.alpha(root.accent, 0.22) : itemArea.containsMouse ? Qt.alpha(root.fg, 0.1) : "transparent"
+              radius: root.r
+              color: modelData.current ? root.selFill : itemArea.containsMouse ? root.hoverFill : "transparent"
               Column {
                 anchors.left: parent.left; anchors.leftMargin: 12; anchors.verticalCenter: parent.verticalCenter
                 Text { text: modelData.label; color: root.fg; font.family: root.font; font.pixelSize: Style.font.body; font.bold: !!modelData.current }
@@ -1381,12 +1395,12 @@ Item {
         anchors.fill: parent
         visible: root.confirmAction !== null
         z: 2100
-        color: Qt.rgba(0, 0, 0, 0.55)
+        color: Color.menu.scrim
         MouseArea { anchors.fill: parent; onClicked: root.confirmAction = null }
-        Rectangle {
+        BorderSurface {
           anchors.centerIn: parent
           width: 420; height: confirmCol.implicitHeight + 40
-          radius: 12; color: root.bg; border.width: 1; border.color: Qt.alpha(root.fg, 0.2)
+          radius: root.r; color: Color.popups.background; borderSpec: root.popupBorder
           MouseArea { anchors.fill: parent }
           Column {
             id: confirmCol
@@ -1406,12 +1420,8 @@ Item {
     }
   }
 
-  component SectionLabel: Text {
-    color: root.dim
-    font.family: root.font
-    font.pixelSize: Style.font.caption
-    font.bold: true
-    font.letterSpacing: 1.1
-    topPadding: 4
+  component SectionLabel: PanelSectionHeader {
+    foreground: root.fg
+    fontFamily: root.font
   }
 }
