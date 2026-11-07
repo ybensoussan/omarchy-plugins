@@ -7,7 +7,8 @@ import qs.Ui
 import "SwitcherModel.js" as M
 
 // Workspace switcher: every connected monitor's visible workspaces in columns laid out like the
-// monitors, each in the colour the Displays & Workspaces manager gives that monitor.
+// monitors. Styled like Omarchy's menu: the search line is the header, rows are transparent and
+// only the cursor row takes the theme's selected colours.
 //   omarchy-shell shell toggle yonathan.workspace-switcher switch   go to a workspace
 //   omarchy-shell shell toggle yonathan.workspace-switcher move     move the focused window there
 // Enter does the mode's action, Shift+Enter the other one; 1-0 picks that slot in the column.
@@ -26,25 +27,28 @@ Item {
   property var sel: ({ col: 0, row: 0 })
   property string query: ""
 
+  // The same theme values Omarchy's menu uses ([menu] in shell.toml).
   readonly property color background: Color.menu.background
   readonly property color foreground: Color.menu.text
-  readonly property color accent: Color.accent
   readonly property color scrim: Color.menu.scrim
+  readonly property color selectedBackground: Color.menu.selectedBackground
+  readonly property color selectedText: Color.menu.selectedText
   readonly property var borderSpec: Border.surfaceSpec("menu", "border", Color.menu.border, Math.max(1, Style.space(2)))
+  readonly property var selectedBorderSpec: Border.surfaceSpec("menu", "selected-border", Color.menu.selectedBorder, 0)
   readonly property string font: Style.font.menuFamily
-  readonly property color dim: Qt.alpha(foreground, 0.55)
+  readonly property int cornerRadius: Style.cornerRadius
+  readonly property int headerHeight: Math.max(Style.space(34), Style.font.title + Style.spacing.controlPaddingY * 2)
+  readonly property int rowHeight: Math.max(Style.space(50), Style.font.body + Style.spacing.rowPaddingX * 2)
 
-  readonly property int colWidth: Style.space(290)
-  readonly property int colGap: Style.space(14)
-  readonly property int tileHeight: Style.space(72)
-  readonly property int tileGap: Style.space(6)
-  readonly property int iconSize: Style.space(22)
+  readonly property int colWidth: Style.space(300)
+  readonly property int colGap: Style.space(12)
+  readonly property int tileGap: Style.spacing.xs
+  readonly property int iconSize: Style.font.iconLarge
   // A single monitor lays its tiles out two per row, so the card isn't a tall narrow strip.
   readonly property int tilesPerRow: columns.length === 1 ? 2 : 1
   // Hover only selects once the pointer moves, so a resting pointer can't steal the cursor on open.
   property bool pointerMoved: false
 
-  function hueColor(index, alpha) { return Qt.hsla(M.hue(index), 0.55, 0.62, alpha === undefined ? 1 : alpha) }
   function tileAt(s) { var c = columns[s.col]; return c ? c.tiles[s.row] || null : null }
   readonly property var current: tileAt(sel)
   readonly property bool hasWindow: !!(activeWindow && activeWindow.address)
@@ -151,25 +155,26 @@ Item {
     shown: root.opened
     WlrLayershell.namespace: "yonathan-workspace-switcher"
 
-    onContentRevealedChanged: if (contentRevealed) filter.forceActiveFocus()
+    // The card opens centred; once revealed its top stays put, so filtering shrinks it
+    // downwards instead of re-centring on every keystroke (as Omarchy's menu does).
+    property int cardTop: -1
+    readonly property int centeredTop: Math.max(Style.gapsOut, Math.round((height - card.height) / 2))
+    onShownChanged: if (!shown) cardTop = -1
+    onContentRevealedChanged: if (contentRevealed) { cardTop = centeredTop; filter.forceActiveFocus() }
 
     Rectangle { anchors.fill: parent; color: root.scrim }
     MouseArea { anchors.fill: parent; onClicked: root.close() }
 
     BorderSurface {
       id: card
-      anchors.centerIn: parent
-      width: Math.max(Style.space(640), header.minWidth, monitorsRow.implicitWidth, hints.implicitWidth) + 2 * padding
+      anchors.horizontalCenter: parent.horizontalCenter
+      y: panel.cardTop >= 0 ? panel.cardTop : panel.centeredTop
+      width: Math.max(Style.space(300), monitorsRow.implicitWidth) + 2 * padding
       height: content.implicitHeight + 2 * padding
-      radius: Style.cornerRadius
+      radius: root.cornerRadius
       color: root.background
       borderSpec: root.borderSpec
       padding: Style.spacing.panelPadding
-
-      opacity: panel.contentRevealed ? 1 : 0
-      scale: panel.contentRevealed ? 1 : 0.96
-      Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
-      Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
       MouseArea { anchors.fill: parent }
 
@@ -203,115 +208,40 @@ Item {
         x: card.padding
         y: card.padding
         width: card.width - 2 * card.padding
-        spacing: Style.space(14)
+        spacing: Style.spacing.md
 
-        // ---------- header: mode, the window being moved, search ----------
+        // ---------- header: the search line, prompting with the mode ----------
         Item {
-          id: header
-          // Title and search side by side, plus room for the window chip when moving.
-          readonly property real minWidth: modeRow.implicitWidth + search.width + Style.space(24)
-                                           + (root.moving ? Style.space(260) : 0)
           width: parent.width
-          height: Style.space(40)
+          height: root.headerHeight
 
-          Row {
-            id: modeRow
+          FilterInput {
+            id: filter
             anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: Style.space(10)
-
-            Text {
-              anchors.verticalCenter: parent.verticalCenter
-              text: root.moving ? "󰁔" : "󰕰"
-              color: root.accent
-              font.pixelSize: Style.font.display
-            }
-            Column {
-              anchors.verticalCenter: parent.verticalCenter
-              Text {
-                text: root.moving ? "Move window" : "Switch workspace"
-                color: root.foreground; font.family: root.font; font.pixelSize: Style.font.title; font.bold: true
-              }
-              Text {
-                text: root.moving ? "Enter moves it · Shift+Enter just goes there" : "Enter goes there · Shift+Enter brings the focused window"
-                color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption
-              }
-            }
-          }
-
-          // The window being moved.
-          Rectangle {
-            visible: root.moving
-            anchors.left: modeRow.right
-            anchors.leftMargin: Style.space(16)
-            anchors.right: search.left
-            anchors.rightMargin: Style.space(16)
-            anchors.verticalCenter: parent.verticalCenter
-            height: Style.space(34)
-            radius: height / 2
-            color: Qt.alpha(root.accent, 0.12)
-            border.width: 1
-            border.color: Qt.alpha(root.accent, 0.35)
-            Row {
-              anchors.left: parent.left; anchors.leftMargin: Style.space(10)
-              anchors.right: parent.right; anchors.rightMargin: Style.space(12)
-              anchors.verticalCenter: parent.verticalCenter
-              spacing: Style.space(8)
-              Image {
-                width: Style.space(20); height: width
-                anchors.verticalCenter: parent.verticalCenter
-                source: root.activeWindow ? root.iconFor(root.activeWindow["class"]) : ""
-                sourceSize.width: width * 2; sourceSize.height: height * 2
-                visible: status === Image.Ready
-              }
-              Text {
-                width: parent.width - Style.space(28)
-                anchors.verticalCenter: parent.verticalCenter
-                elide: Text.ElideRight
-                text: root.activeWindow ? (root.appName(root.activeWindow["class"]) + "  —  " + root.activeWindow.title) : ""
-                color: root.foreground; font.family: root.font; font.pixelSize: Style.font.bodySmall
-              }
-            }
-          }
-
-          Rectangle {
-            id: search
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            width: Style.space(220)
-            height: Style.space(34)
-            radius: Math.min(Style.cornerRadius + 4, height / 2)
-            color: Qt.alpha(root.foreground, 0.05)
-            border.width: 1
-            border.color: filter.text ? Qt.alpha(root.accent, 0.7) : Qt.alpha(root.foreground, 0.12)
-            Text {
-              id: searchGlyph
-              anchors.left: parent.left; anchors.leftMargin: Style.space(10)
-              anchors.verticalCenter: parent.verticalCenter
-              text: "󰍉"; color: root.dim; font.pixelSize: Style.font.title
-            }
-            FilterInput {
-              id: filter
-              anchors.left: searchGlyph.right; anchors.leftMargin: Style.space(8)
-              anchors.right: parent.right; anchors.rightMargin: Style.space(10)
-              anchors.verticalCenter: parent.verticalCenter
-              keyHandler: keys
-              focus: root.opened
-              color: root.foreground
-              font.family: root.font
-              font.pixelSize: Style.font.body
-              onTextChanged: root.query = text
-              Text {
-                visible: !filter.text
-                anchors.verticalCenter: parent.verticalCenter
-                text: "name, app or monitor"
-                color: Qt.alpha(root.foreground, 0.35); font.family: root.font; font.pixelSize: Style.font.body
-              }
-            }
+            keyHandler: keys
+            color: root.foreground
+            font.family: root.font
+            font.pixelSize: Style.font.heading
+            onTextChanged: root.query = text
+          }
+
+          Text {
+            textFormat: Text.PlainText
+            anchors.fill: filter
+            verticalAlignment: Text.AlignVCenter
+            visible: !filter.text && !filter.preeditText
+            text: root.moving ? "Move " + root.appName(root.activeWindow["class"]) + " to…" : "Switch workspace…"
+            color: root.foreground
+            opacity: 0.58
+            font.family: root.font
+            font.pixelSize: Style.font.heading
+            elide: Text.ElideRight
           }
         }
 
-        // ---------- monitors ----------
+        // ---------- one column per monitor, hairlines between ----------
         Row {
           id: monitorsRow
           anchors.horizontalCenter: parent.horizontalCenter
@@ -320,76 +250,53 @@ Item {
           Repeater {
             model: root.columns
 
-            delegate: Rectangle {
-              id: column
+            delegate: Row {
+              id: columnBox
               required property var modelData
               required property int index
-              readonly property color hue: root.hueColor(modelData.index)
+              spacing: root.colGap
 
-              width: root.colWidth * root.tilesPerRow + root.tileGap * (root.tilesPerRow - 1)
-              height: columnContent.implicitHeight + Style.space(12)
-              radius: Math.max(Style.cornerRadius, 8)
-              color: Qt.alpha(column.hue, 0.05)
-              border.width: 1
-              border.color: Qt.alpha(column.hue, modelData.focused ? 0.55 : 0.22)
-
-              // A thin band in the monitor's colour.
-              Rectangle {
-                anchors { left: parent.left; right: parent.right; top: parent.top; leftMargin: parent.radius; rightMargin: parent.radius }
-                height: 3
-                color: column.hue
-                opacity: column.modelData.focused ? 1 : 0.6
+              // Zero-height holder, so the hairline can span the tallest column without
+              // feeding back into the row's own height.
+              Item {
+                visible: columnBox.index > 0
+                width: Style.spacing.hairline
+                height: 0
+                Rectangle {
+                  width: parent.width
+                  height: monitorsRow.height
+                  color: Util.alpha(root.foreground, 0.2)
+                }
               }
 
               Column {
-                id: columnContent
-                x: Style.space(6)
-                y: Style.space(6)
-                width: parent.width - Style.space(12)
+                id: column
+                readonly property var info: columnBox.modelData
+                readonly property int colIndex: columnBox.index
+                width: root.colWidth * root.tilesPerRow + root.tileGap * (root.tilesPerRow - 1)
                 spacing: root.tileGap
 
-                // header
-                Item {
-                  width: parent.width
-                  height: Style.space(50)
+                // section header, as in Omarchy's panels
+                Row {
+                  spacing: Style.space(6)
+                  leftPadding: Style.space(8)
+                  bottomPadding: Style.space(4)
                   Text {
-                    id: glyph
-                    anchors.left: parent.left; anchors.leftMargin: Style.space(8)
                     anchors.verticalCenter: parent.verticalCenter
-                    text: column.modelData.internal ? "󰌢" : "󰍹"
-                    rotation: column.modelData.portrait ? 90 : 0
-                    color: column.hue
-                    font.pixelSize: Style.font.display
+                    textFormat: Text.PlainText
+                    text: column.info.internal ? "󰌢" : "󰍹"
+                    rotation: column.info.portrait ? 90 : 0
+                    color: column.info.focused ? root.foreground : Qt.darker(root.foreground, 1.4)
+                    font.family: root.font
+                    font.pixelSize: Style.font.body
                   }
-                  Column {
-                    anchors.left: glyph.right; anchors.leftMargin: Style.space(10)
-                    anchors.right: focusPill.left; anchors.rightMargin: Style.space(6)
+                  PanelSectionHeader {
                     anchors.verticalCenter: parent.verticalCenter
-                    Text {
-                      width: parent.width; elide: Text.ElideRight
-                      text: column.modelData.short
-                      color: root.foreground; font.family: root.font; font.pixelSize: Style.font.heading; font.bold: true
-                    }
-                    Text {
-                      width: parent.width; elide: Text.ElideRight
-                      text: column.modelData.label + "  ·  " + column.modelData.output
-                      color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption
-                    }
-                  }
-                  Rectangle {
-                    id: focusPill
-                    visible: column.modelData.focused
-                    anchors.right: parent.right; anchors.rightMargin: Style.space(6)
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: visible ? pillText.implicitWidth + Style.space(12) : 0
-                    height: Style.space(18); radius: height / 2
-                    color: Qt.alpha(column.hue, 0.22)
-                    Text {
-                      id: pillText
-                      anchors.centerIn: parent
-                      text: "FOCUSED"; color: column.hue
-                      font.family: root.font; font.pixelSize: Style.font.caption - 2; font.bold: true; font.letterSpacing: 1
-                    }
+                    width: column.width - Style.space(40)
+                    elide: Text.ElideRight
+                    foreground: column.info.focused ? Qt.lighter(root.foreground, 1.4) : root.foreground
+                    fontFamily: root.font
+                    text: column.info.short.toUpperCase() + "  ·  " + column.info.label
                   }
                 }
 
@@ -400,188 +307,147 @@ Item {
                   columnSpacing: root.tileGap
                   rowSpacing: root.tileGap
 
-                Repeater {
-                  model: column.modelData.tiles
+                  Repeater {
+                    model: column.info.tiles
 
-                  delegate: Rectangle {
-                    id: tile
-                    required property var modelData
-                    required property int index
-                    readonly property bool selected: root.sel.col === column.index && root.sel.row === index
-                    readonly property bool match: M.matches(modelData, column.modelData, root.query)
-                    readonly property var apps: root.uniqueApps(modelData.apps)
+                    delegate: BorderSurface {
+                      id: row
+                      required property var modelData
+                      required property int index
+                      readonly property bool hasCursor: root.sel.col === column.colIndex && root.sel.row === index
+                      readonly property var apps: root.uniqueApps(modelData.apps)
+                      readonly property color ink: hasCursor ? root.selectedText : root.foreground
 
-                    width: (tileGrid.width - root.tileGap * (root.tilesPerRow - 1)) / root.tilesPerRow
-                    height: root.tileHeight
-                    radius: Math.max(Style.cornerRadius, 7)
-                    opacity: match ? 1 : 0.22
-                    color: selected ? Qt.alpha(root.accent, 0.16)
-                         : hover.containsMouse ? Qt.alpha(root.foreground, 0.07)
-                         : Qt.alpha(root.foreground, modelData.apps.length ? 0.04 : 0.02)
-                    border.width: selected ? 2 : modelData.focused ? 1 : 0
-                    border.color: selected ? root.accent : Qt.alpha(column.hue, 0.7)
-                    Behavior on color { ColorAnimation { duration: 90 } }
-                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                      // Filtering leaves rows out, as Omarchy's menu does.
+                      visible: M.matches(modelData, column.info, root.query)
+                      width: (tileGrid.width - root.tileGap * (root.tilesPerRow - 1)) / root.tilesPerRow
+                      height: root.rowHeight
+                      radius: root.cornerRadius
+                      color: hasCursor ? root.selectedBackground : "transparent"
+                      borderSpec: hasCursor ? root.selectedBorderSpec : Border.none()
 
-                    MouseArea {
-                      id: hover
-                      anchors.fill: parent
-                      hoverEnabled: true
-                      cursorShape: Qt.PointingHandCursor
-                      onPositionChanged: {
-                        if (!root.pointerMoved) { root.pointerMoved = true; return }
-                        if (tile.match && !tile.selected) root.sel = { col: column.index, row: tile.index }
+                      MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        // Hover only selects once the pointer moves, so a resting pointer can't
+                        // steal the cursor on open.
+                        onPositionChanged: {
+                          if (!root.pointerMoved) { root.pointerMoved = true; return }
+                          if (!row.hasCursor) root.sel = { col: column.colIndex, row: row.index }
+                        }
+                        onClicked: function(mouse) {
+                          root.sel = { col: column.colIndex, row: row.index }
+                          root.activate(mouse.modifiers & Qt.ShiftModifier)
+                        }
                       }
-                      onClicked: function(mouse) {
-                        root.sel = { col: column.index, row: tile.index }
-                        root.activate(mouse.modifiers & Qt.ShiftModifier)
-                      }
-                    }
 
-                    // keycap: Super + this key reaches the workspace on its monitor
-                    Rectangle {
-                      id: keycap
-                      x: Style.space(10)
-                      anchors.verticalCenter: parent.verticalCenter
-                      width: Style.space(38); height: width
-                      radius: Math.max(Style.cornerRadius, 7)
-                      color: tile.modelData.shown ? column.hue : Qt.alpha(column.hue, 0.14)
-                      border.width: 1
-                      border.color: Qt.alpha(column.hue, tile.modelData.shown ? 1 : 0.45)
+                      // Super + this key reaches the workspace on its monitor; it sits where
+                      // Omarchy's menu puts a row's icon.
                       Text {
-                        anchors.centerIn: parent
-                        text: tile.modelData.key
-                        color: tile.modelData.shown ? root.background : root.foreground
-                        font.family: root.font; font.pixelSize: Style.font.title; font.bold: true
+                        id: keyText
+                        textFormat: Text.PlainText
+                        anchors.left: parent.left
+                        anchors.leftMargin: Border.left(root.selectedBorderSpec) + Style.space(8)
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Style.space(36)
+                        horizontalAlignment: Text.AlignHCenter
+                        text: row.modelData.key
+                        color: row.ink
+                        opacity: row.hasCursor || row.modelData.shown ? 1 : 0.45
+                        font.family: root.font
+                        font.pixelSize: Style.font.iconLarge
                       }
-                    }
-
-                    Column {
-                      anchors.left: keycap.right; anchors.leftMargin: Style.space(12)
-                      anchors.right: stateMark.left; anchors.rightMargin: Style.space(6)
-                      anchors.verticalCenter: parent.verticalCenter
-                      spacing: Style.space(4)
 
                       Text {
-                        width: parent.width; elide: Text.ElideRight
-                        text: tile.modelData.label
-                        color: tile.modelData.name ? root.foreground : root.dim
-                        font.family: root.font; font.pixelSize: Style.font.title; font.bold: tile.modelData.shown
-                        font.italic: !tile.modelData.name
+                        textFormat: Text.PlainText
+                        anchors.left: keyText.right
+                        anchors.leftMargin: Style.space(6)
+                        anchors.right: trail.left
+                        anchors.rightMargin: Style.space(8)
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: row.modelData.label
+                        color: row.ink
+                        opacity: row.modelData.name ? 1 : 0.58
+                        font.family: root.font
+                        font.pixelSize: Style.font.heading
+                        font.weight: Font.Medium
+                        elide: Text.ElideRight
                       }
 
+                      // open apps, then a dot on the workspace this monitor shows
                       Row {
+                        id: trail
+                        anchors.right: parent.right
+                        anchors.rightMargin: Border.right(root.selectedBorderSpec) + Style.space(10)
+                        anchors.verticalCenter: parent.verticalCenter
                         spacing: Style.space(6)
-                        height: root.iconSize
+
                         Repeater {
-                          model: tile.apps.slice(0, 6)
+                          model: row.apps.slice(0, 4)
                           delegate: Item {
                             required property var modelData
                             width: root.iconSize; height: width
+                            anchors.verticalCenter: parent.verticalCenter
                             Image {
                               id: appIcon
                               anchors.fill: parent
                               source: root.iconFor(modelData.cls)
-                              sourceSize.width: width * 2; sourceSize.height: height * 2
-                              smooth: true
+                              sourceSize.width: width * Screen.devicePixelRatio
+                              sourceSize.height: height * Screen.devicePixelRatio
+                              fillMode: Image.PreserveAspectFit
+                              asynchronous: true
                               visible: status === Image.Ready
                             }
-                            Rectangle {
-                              anchors.fill: parent
+                            Text {
+                              anchors.centerIn: parent
                               visible: appIcon.status !== Image.Ready
-                              radius: 4
-                              color: Qt.alpha(column.hue, 0.3)
-                              Text {
-                                anchors.centerIn: parent
-                                text: root.appName(modelData.cls).charAt(0).toUpperCase()
-                                color: root.foreground; font.family: root.font; font.pixelSize: Style.font.caption - 1; font.bold: true
-                              }
+                              textFormat: Text.PlainText
+                              text: root.appName(modelData.cls).charAt(0).toUpperCase()
+                              color: row.ink
+                              opacity: 0.58
+                              font.family: root.font
+                              font.pixelSize: Style.font.body
+                              font.bold: true
                             }
                           }
                         }
                         Text {
                           anchors.verticalCenter: parent.verticalCenter
-                          visible: tile.apps.length > 6 || tile.modelData.apps.length === 0 || tile.modelData.apps.length > tile.apps.length
-                          text: tile.modelData.apps.length === 0 ? "empty"
-                                : tile.apps.length > 6 ? "+" + (tile.apps.length - 6)
-                                : "×" + tile.modelData.apps.length
-                          color: Qt.alpha(root.foreground, 0.4)
-                          font.family: root.font; font.pixelSize: Style.font.caption
+                          visible: row.apps.length > 4
+                          textFormat: Text.PlainText
+                          text: "+" + (row.apps.length - 4)
+                          color: row.ink
+                          opacity: 0.45
+                          font.family: root.font
+                          font.pixelSize: Style.font.bodySmall
                         }
-                      }
-                    }
-
-                    // on screen / focused marker
-                    Item {
-                      id: stateMark
-                      anchors.right: parent.right; anchors.rightMargin: Style.space(12)
-                      anchors.verticalCenter: parent.verticalCenter
-                      width: Style.space(10); height: width
-                      Rectangle {
-                        anchors.centerIn: parent
-                        visible: tile.modelData.shown
-                        width: tile.modelData.focused ? Style.space(10) : Style.space(7)
-                        height: width; radius: width / 2
-                        color: tile.modelData.focused ? root.accent : column.hue
-                        SequentialAnimation on opacity {
-                          running: tile.modelData.focused && root.opened
-                          loops: Animation.Infinite
-                          NumberAnimation { from: 1; to: 0.35; duration: 900; easing.type: Easing.InOutSine }
-                          NumberAnimation { from: 0.35; to: 1; duration: 900; easing.type: Easing.InOutSine }
+                        Text {
+                          anchors.verticalCenter: parent.verticalCenter
+                          width: Style.space(8)
+                          horizontalAlignment: Text.AlignHCenter
+                          textFormat: Text.PlainText
+                          text: row.modelData.shown ? "●" : ""
+                          color: row.ink
+                          opacity: row.modelData.focused ? 1 : 0.45
+                          font.family: root.font
+                          font.pixelSize: Style.font.caption
                         }
                       }
                     }
                   }
                 }
 
-                }
-
                 Text {
-                  visible: column.modelData.tiles.length === 0
-                  width: parent.width
-                  horizontalAlignment: Text.AlignHCenter
-                  topPadding: Style.space(8); bottomPadding: Style.space(8)
-                  text: "No visible workspaces"
-                  color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption
+                  visible: !column.info.tiles.some(function(t) { return M.matches(t, column.info, root.query) })
+                  leftPadding: Style.space(8)
+                  textFormat: Text.PlainText
+                  text: root.query ? "No match" : "No visible workspaces"
+                  color: root.foreground
+                  opacity: 0.45
+                  font.family: root.font
+                  font.pixelSize: Style.font.bodySmall
                 }
-              }
-            }
-          }
-        }
-
-        // ---------- key hints ----------
-        Row {
-          id: hints
-          anchors.horizontalCenter: parent.horizontalCenter
-          spacing: Style.space(18)
-          Repeater {
-            model: [
-              { keys: "↑ ↓ ← →", text: "move" },
-              { keys: "1 – 0", text: "slot on this monitor" },
-              { keys: "⏎", text: root.moving ? "move window" : "switch" },
-              { keys: "⇧ ⏎", text: root.moving ? "switch only" : "bring window" },
-              { keys: "esc", text: "close" }
-            ]
-            delegate: Row {
-              required property var modelData
-              spacing: Style.space(6)
-              Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: keyText.implicitWidth + Style.space(12); height: Style.space(20)
-                radius: Math.max(Style.cornerRadius, 4)
-                color: Qt.alpha(root.foreground, 0.06)
-                border.width: 1; border.color: Qt.alpha(root.foreground, 0.16)
-                Text {
-                  id: keyText
-                  anchors.centerIn: parent
-                  text: modelData.keys
-                  color: root.foreground; font.family: root.font; font.pixelSize: Style.font.caption
-                }
-              }
-              Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: modelData.text
-                color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption
               }
             }
           }

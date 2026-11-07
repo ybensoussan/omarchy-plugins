@@ -8,11 +8,6 @@
 
 var SLOTS = 10
 var DEFAULT_VISIBLE = 5
-// Same palette as the Displays & Workspaces manager, indexed by the monitor's place in the profile.
-var HUES = [210, 150, 280, 30, 340, 90, 190, 0]
-
-function hue(index) { return HUES[(index || 0) % HUES.length] / 360 }
-
 function slotKey(slot) { return slot === SLOTS ? "0" : String(slot) }
 
 function slotForKey(key) {
