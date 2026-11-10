@@ -157,9 +157,10 @@ Item {
     var tile = current
     if (!column || !tile || !M.valid(columns, sel, query)) return
     var move = (mode === "move") !== !!alternate
-    var ref = column.output + ":" + tile.slot
+    var ref = tile.special ? tile.special : column.output + ":" + tile.slot
     close()
     if (move && hasWindow) Quickshell.execDetached(["omarchy-display-profiles", "send", ref])
+    else if (tile.special) Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.workspace.toggle_special(\"scratchpad\")"])
     else Quickshell.execDetached(["hyprctl", "dispatch", "o.workspaces.focus(" + tile.slot + ", \"" + column.output + "\")"])
   }
 

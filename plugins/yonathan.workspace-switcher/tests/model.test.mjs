@@ -37,7 +37,7 @@ const columns = () => M.buildColumns(order, blocks, clients, monitors)
 test("columns follow the profile, left to right, visible slots only", () => {
   const cols = columns()
   assert.deepEqual(cols.map(c => c.short), ["Laptop", "Middle", "Right"])
-  assert.deepEqual(cols[1].tiles.map(t => [t.id, t.key, t.label]), [[11, "1", "Terminal"], [12, "2", "Browser"], [13, "3", "Editor"], [17, "7", "Workspace 7"]])
+  assert.deepEqual(cols[1].tiles.map(t => [t.id, t.key, t.label]), [[11, "1", "Terminal"], [12, "2", "Browser"], [13, "3", "Editor"], [17, "7", "Workspace 7"], ["special:scratchpad", "S", "Scratchpad"]])
   assert.ok(cols[2].portrait)
 })
 
@@ -45,6 +45,15 @@ test("windows per tile, most recently focused first, shell windows and specials 
   const cols = columns()
   assert.deepEqual(plain(cols[1].tiles[0].apps), [{ cls: "com.mitchellh.ghostty", title: "ssh" }, { cls: "com.mitchellh.ghostty", title: "herdr" }])
   assert.equal(cols[1].windows, 3)
+})
+
+test("scratchpad tile lists its windows and shows when open on the focused monitor", () => {
+  const cl = clients.concat([{ class: "foot", title: "notes", workspace: { id: -98, name: "special:scratchpad" }, focusHistoryID: 5 }])
+  const mon = monitors.map(m => m.name === "DP-6" ? { ...m, specialWorkspace: { name: "special:scratchpad" } } : m)
+  const tile = M.buildColumns(order, blocks, cl, mon)[1].tiles.pop()
+  assert.equal(tile.special, "special:scratchpad")
+  assert.ok(tile.shown && tile.focused)
+  assert.deepEqual(plain(tile.apps), [{ cls: "foot", title: "notes" }])
 })
 
 test("shown and focused workspaces", () => {
@@ -58,7 +67,7 @@ test("unplugged monitors are left out; unknown ones get slots 1-5 plus busy ones
   const cols = M.buildColumns(order, { ...blocks, "HDMI-A-1": 3 }, [{ class: "x", workspace: { id: 38 } }],
     [monitors[0], { name: "HDMI-A-1", x: 9000, y: 0, activeWorkspace: { id: 31 }, focused: false }])
   assert.deepEqual(cols.map(c => c.output), ["eDP-1", "HDMI-A-1"])
-  assert.deepEqual(cols[1].tiles.map(t => t.key), ["1", "2", "3", "4", "5", "8"])
+  assert.deepEqual(cols[1].tiles.map(t => t.key), ["1", "2", "3", "4", "5", "8", "S"])
 })
 
 test("filter by name, monitor or app", () => {
@@ -72,8 +81,8 @@ test("filter by name, monitor or app", () => {
 
 test("arrow keys wrap in a column and keep the row across columns", () => {
   const cols = columns()
-  assert.deepEqual(plain(M.step(cols, { col: 1, row: 3 }, 0, 1, "")), { col: 1, row: 0 })
-  assert.deepEqual(plain(M.step(cols, { col: 1, row: 0 }, 0, -1, "")), { col: 1, row: 3 })
+  assert.deepEqual(plain(M.step(cols, { col: 1, row: 4 }, 0, 1, "")), { col: 1, row: 0 })
+  assert.deepEqual(plain(M.step(cols, { col: 1, row: 0 }, 0, -1, "")), { col: 1, row: 4 })
   assert.deepEqual(plain(M.step(cols, { col: 1, row: 3 }, -1, 0, "")), { col: 0, row: 1 })
   assert.deepEqual(plain(M.step(cols, { col: 2, row: 0 }, 1, 0, "")), { col: 2, row: 0 })
   // With a filter, columns without a match are skipped.

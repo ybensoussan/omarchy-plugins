@@ -8,6 +8,7 @@
 
 var SLOTS = 10
 var DEFAULT_VISIBLE = 5
+var SCRATCHPAD = "special:scratchpad"
 function slotKey(slot) { return slot === SLOTS ? "0" : String(slot) }
 
 function slotForKey(key) {
@@ -31,7 +32,8 @@ function buildColumns(order, blocks, clients, monitors) {
   ;(clients || []).slice().sort(function(a, b) { return (a.focusHistoryID || 0) - (b.focusHistoryID || 0) })
     .forEach(function(c) {
       var ws = c && c.workspace ? c.workspace.id : null
-      if (!(ws > 0) || c.mapped === false || c["class"] === "org.quickshell") return
+      if (c && c.workspace && c.workspace.name === SCRATCHPAD) ws = SCRATCHPAD
+      if (!(ws > 0 || ws === SCRATCHPAD) || c.mapped === false || c["class"] === "org.quickshell") return
       ;(byWorkspace[ws] = byWorkspace[ws] || []).push({ cls: String(c["class"] || ""), title: String(c.title || "") })
     })
 
@@ -60,7 +62,22 @@ function buildColumns(order, blocks, clients, monitors) {
     columns.push(makeColumn({ output: name, label: m.description || name, short: short, index: columns.length,
                               portrait: m.transform % 2 === 1, block: block, slots: slots }, m, blocks, byWorkspace))
   })
+  addScratchpad(columns, byWorkspace, live)
   return columns
+}
+
+// The scratchpad is a special workspace, not part of any profile; it hangs off the focused monitor's column.
+function addScratchpad(columns, byWorkspace, live) {
+  if (!columns.length) return
+  var target = columns[columns.length - 1]
+  columns.forEach(function(c) { if (c.focused) target = c })
+  var m = live[target.output] || {}
+  var shown = !!(m.specialWorkspace && m.specialWorkspace.name === SCRATCHPAD)
+  target.tiles.push({
+    id: SCRATCHPAD, special: SCRATCHPAD, slot: 0, key: "S", name: "scratchpad", label: "Scratchpad",
+    apps: byWorkspace[SCRATCHPAD] || [], shown: shown, focused: shown && !!m.focused
+  })
+  target.windows += (byWorkspace[SCRATCHPAD] || []).length
 }
 
 function makeColumn(entry, monitor, blocks, byWorkspace) {

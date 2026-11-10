@@ -779,6 +779,7 @@ Item {
                 text: wsInspector.name
                 onAccepted: root.renameSlot(root.selMonitor, root.selSlot, wsName.text)
                 onCancelled: wsName.text = wsInspector.name
+                onFocusLost: if (wsInspector.slot && wsName.text.trim() !== wsInspector.name) root.renameSlot(root.selMonitor, root.selSlot, wsName.text)
               }
               Text {
                 width: parent.width; wrapMode: Text.WordWrap; color: root.dim; font.family: root.font; font.pixelSize: Style.font.caption
@@ -1275,7 +1276,7 @@ Item {
                             onVisibleChanged: if (visible) { text = wrow.modelData.name; input.forceActiveFocus(); input.selectAll() }
                             onAccepted: root.renameSlot(column.monitorIndex, wrow.slot, text)
                             onCancelled: root.renaming = ""
-                            onFocusLost: if (root.renaming === wrow.key) root.renaming = ""
+                            onFocusLost: if (root.renaming === wrow.key) root.renameSlot(column.monitorIndex, wrow.slot, text)
                           }
                           Text {
                             id: appsLabel
