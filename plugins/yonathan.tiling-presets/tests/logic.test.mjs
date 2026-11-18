@@ -7,7 +7,7 @@ import vm from "node:vm"
 
 const source = readFileSync(fileURLToPath(new URL("../Logic.js", import.meta.url)), "utf8").replace(".pragma library", "")
 const L = {}
-vm.runInNewContext(source + "\nObject.assign(out, { previewRects, describe, uniqueName, blank, strip, scope, offered })", { out: L })
+vm.runInNewContext(source + "\nObject.assign(out, { previewRects, describe, uniqueName, blank, strip, scope, offered, ORIENTATIONS })", { out: L })
 const plain = value => JSON.parse(JSON.stringify(value))
 const area = rects => rects.reduce((sum, r) => sum + r.w * r.h, 0)
 const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} !== ${b}`)
@@ -20,6 +20,7 @@ test("tiled layouts fill the area exactly, whatever the window count", () => {
     { layout: "master", orientation: "top", ratio: 0.7 },
     { layout: "master", orientation: "bottom", ratio: 0.5 },
     { layout: "master", orientation: "center", ratio: 0.5 },
+    { layout: "master", orientation: "middle", ratio: 0.4 },
   ]) {
     for (let n = 1; n <= 7; n++) {
       const rects = L.previewRects(preset, n, 1.6)
@@ -92,4 +93,21 @@ test("offered counts what a monitor shows", () => {
 
 test("a new preset is offered everywhere", () => {
   assert.equal(L.blank().monitor, "any")
+})
+
+test("middle puts the main window in a band, the next windows above then below it", () => {
+  const rects = L.previewRects({ layout: "master", orientation: "middle", ratio: 0.4 }, 5)
+  close(rects[0].y, 0.3)
+  close(rects[0].h, 0.4)
+  // windows 2 and 4 above, 3 and 5 below, each pair side by side
+  assert.ok(rects[1].y < rects[0].y && rects[3].y < rects[0].y && rects[1].x < rects[3].x)
+  assert.ok(rects[2].y > rects[0].y && rects[4].y > rects[0].y)
+  const two = L.previewRects({ layout: "master", orientation: "middle", ratio: 0.4 }, 2)
+  close(two[1].y, 0)
+  close(two[0].y, 0.6)
+})
+
+test("middle is one of the orientations, and reads as such", () => {
+  assert.ok(L.ORIENTATIONS.includes("middle"))
+  assert.equal(L.describe({ layout: "master", orientation: "middle", ratio: 0.4 }), "Master · main in the middle, others above and below · 40%")
 })

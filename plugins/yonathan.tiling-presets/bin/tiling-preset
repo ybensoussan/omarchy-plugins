@@ -25,7 +25,7 @@ SANITIZE='
   [ .[]? | select(type == "object") | {
       name: ((.name // "") | tostring | gsub("^\\s+|\\s+$"; "") | .[0:40]),
       layout: (if (.layout | IN("dwindle", "master", "scrolling", "monocle")) then .layout else "dwindle" end),
-      orientation: (if (.orientation | IN("left", "right", "top", "bottom", "center")) then .orientation else "left" end),
+      orientation: (if (.orientation | IN("left", "right", "top", "bottom", "center", "middle")) then .orientation else "left" end),
       ratio: ((.ratio // 0.55) | num(0.55; 0.1; 0.9)),
       direction: (if (.direction | IN("right", "left", "down", "up")) then .direction else "right" end),
       columnWidth: ((.columnWidth // 0.5) | num(0.5; 0.1; 1)),
@@ -122,17 +122,38 @@ apply)
     jq -r '[.name, .layout, .orientation, .ratio, .direction, .columnWidth] | @tsv' <<<"$preset")
 
   # Only whitelisted words and clamped numbers reach the Lua below; the name never does.
+  # "middle" is a custom layout (layouts.lua): the main window in a band across the middle, the
+  # others above and below it. Everything else is one of Hyprland's own.
   opts=
+  setup=
+  rule_layout=$layout
   case $layout in
-  master) opts="layout_opts = { orientation = \"$orientation\" }" ;;
+  master)
+    if [[ $orientation == middle ]]; then
+      rule_layout=lua:tp_middle
+      lib=${DIR//\\/\\\\}; lib=${lib//\"/\\\"}
+      setup="dofile(\"$lib/layouts.lua\")
+TilingPresets.set(\"$ws\", { ratio = $ratio })"
+    else
+      opts="layout_opts = { orientation = \"$orientation\" }"
+    fi
+    ;;
   scrolling) opts="layout_opts = { direction = \"$direction\" }" ;;
   esac
 
-  rule="hl.workspace_rule({ workspace = \"$ws\", layout = \"$layout\"${opts:+, $opts} })"
+  rule="hl.workspace_rule({ workspace = \"$ws\", layout = \"$rule_layout\"${opts:+, $opts} })"
   mode="o.workspace_mode({ workspace = \"$ws\", mode = \"$layout\" })"
 
-  if ! hyprctl eval "$mode
-$rule" >/dev/null 2>&1; then
+  # A custom layout is not one of Omarchy's modes, so the live change first puts the workspace
+  # back to a tiled mode (un-floating it), then switches the layout over that.
+  live=$mode
+  [[ -n $setup ]] && live="o.workspace_mode({ workspace = \"$ws\", mode = \"dwindle\" })
+$setup
+$rule"
+  [[ -z $setup ]] && live="$mode
+$rule"
+
+  if ! hyprctl eval "$live" >/dev/null 2>&1; then
     notify "Could not apply “$name”"
     exit 1
   fi
@@ -141,7 +162,11 @@ $rule" >/dev/null 2>&1; then
   case $layout in
   master)
     sleep 0.15
-    hyprctl dispatch "hl.dsp.layout(\"mfact exact $ratio\")" >/dev/null 2>&1
+    if [[ $orientation == middle ]]; then
+      hyprctl dispatch "hl.dsp.layout(\"ratio $ratio\")" >/dev/null 2>&1
+    else
+      hyprctl dispatch "hl.dsp.layout(\"mfact exact $ratio\")" >/dev/null 2>&1
+    fi
     ;;
   scrolling)
     sleep 0.15
@@ -152,14 +177,17 @@ $rule" >/dev/null 2>&1; then
   # Saved the way Super + L saves a layout, so it comes back on a config reload
   # and the next Super + L replaces or removes it. A plain default layout needs no file.
   mkdir -p "$MODES_DIR"
-  if [[ -z $opts && $layout == "$(omarchy-hyprland-workspace-layout-default)" ]]; then
+  if [[ -z $opts && -z $setup && $layout == "$(omarchy-hyprland-workspace-layout-default)" ]]; then
     rm -f "$MODES_DIR/$ws.lua"
+  elif [[ -n $setup ]]; then
+    printf '%s\n%s\n' "$setup" "$rule" >"$MODES_DIR/$ws.lua"
   else
     printf '%s\n%s\n' "$mode" "$rule" >"$MODES_DIR/$ws.lua"
   fi
 
   mkdir -p "$STATE"
   [[ -s $APPLIED ]] || echo '{}' >"$APPLIED"
+  layout=$(omarchy-hyprland-workspace-layout-current "$ws")
   jq --arg ws "$ws" --arg name "$name" --arg layout "$layout" '.[$ws] = { name: $name, layout: $layout }' \
     "$APPLIED" >"$APPLIED.tmp" && mv "$APPLIED.tmp" "$APPLIED"
 
