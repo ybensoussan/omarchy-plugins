@@ -6,7 +6,7 @@
 #
 #   tiling-preset state            JSON for the plugin: focused workspace, its preset, all presets
 #   tiling-preset list             the presets as JSON
-#   tiling-preset apply <name|n>   apply a preset (by name, or its 1-based position) to the focused workspace
+#   tiling-preset apply <name|n>   apply a preset (by name, or its 1-based position among those this monitor offers) to the focused workspace
 #   tiling-preset defaults         the built-in presets as JSON
 #   tiling-preset save             replace the presets with the JSON array on stdin (validated)
 
@@ -17,7 +17,8 @@ MODES_DIR=$STATE/workspace-layouts
 APPLIED=$STATE/tiling-presets-applied.json
 
 # One place decides what a valid preset is, whether it came from the file, the
-# GUI or a hand edit: unknown values fall back, numbers are clamped, at most 9.
+# GUI or a hand edit: unknown values fall back, numbers are clamped, at most 18.
+# `monitor` says where a preset is offered: any monitor, or only landscape / portrait ones.
 SANITIZE='
   def clamp($lo; $hi): if . < $lo then $lo elif . > $hi then $hi else . end;
   def num($d; $lo; $hi): ((tonumber? // $d) | clamp($lo; $hi) | . * 100 | round / 100);
@@ -27,8 +28,24 @@ SANITIZE='
       orientation: (if (.orientation | IN("left", "right", "top", "bottom", "center")) then .orientation else "left" end),
       ratio: ((.ratio // 0.55) | num(0.55; 0.1; 0.9)),
       direction: (if (.direction | IN("right", "left", "down", "up")) then .direction else "right" end),
-      columnWidth: ((.columnWidth // 0.5) | num(0.5; 0.1; 1))
-    } | select(.name != "") ] | .[0:9]'
+      columnWidth: ((.columnWidth // 0.5) | num(0.5; 0.1; 1)),
+      monitor: (if (.monitor | IN("any", "landscape", "portrait")) then .monitor else "any" end)
+    } | select(.name != "") ] | .[0:18]'
+
+# What the focused workspace's monitor looks like, after rotation: portrait or landscape.
+orientation() {
+  local monitor
+  monitor=$(hyprctl activeworkspace -j | jq -r '.monitor // empty')
+  hyprctl monitors -j | jq -r --arg m "$monitor" '
+    (first(.[] | select(.name == $m)) // first(.[] | select(.focused))) // empty
+    | (if (.transform // 0) % 2 == 1 then {w: .height, h: .width} else {w: .width, h: .height} end)
+    | if .h > .w then "portrait" else "landscape" end' | head -n1
+}
+
+# The presets offered on this monitor, at most 9 so each has a number key.
+visible() {
+  jq -c --arg o "${1:-landscape}" '[.[] | select(.monitor == "any" or .monitor == $o)] | .[0:9]'
+}
 
 presets() {
   [[ -s $CONFIG ]] || { mkdir -p "$(dirname "$CONFIG")" && jq "$SANITIZE" "$DIR/defaults.json" >"$CONFIG"; }
@@ -64,8 +81,12 @@ state)
   IFS=$'\t' read -r ws wsname windows < <(active_workspace)
   current=
   [[ $ws =~ ^[0-9]+$ ]] && current=$(current_name "$ws")
-  presets | jq --arg ws "$ws" --arg name "$wsname" --argjson windows "${windows:-0}" --arg current "$current" \
-    '{ workspace: $ws, name: $name, windows: $windows, current: $current, presets: . }'
+  orient=$(orientation)
+  all=$(presets)
+  jq -n --arg ws "$ws" --arg name "$wsname" --argjson windows "${windows:-0}" --arg current "$current" \
+    --arg orient "${orient:-landscape}" --argjson all "$all" \
+    '{ workspace: $ws, name: $name, windows: $windows, current: $current, portrait: ($orient == "portrait"),
+       presets: ($all | [.[] | select(.monitor == "any" or .monitor == $orient)] | .[0:9]), all: $all }'
   ;;
 
 defaults)
@@ -88,9 +109,13 @@ apply)
     exit 1
   fi
 
-  preset=$(presets | jq -c --arg w "$wanted" '
+  # A number counts in the list this monitor shows; a name also finds presets made for the other orientation.
+  all=$(presets)
+  shown=$(visible "$(orientation)" <<<"$all")
+  preset=$(jq -c --argjson all "$all" --arg w "$wanted" '
+    def named($list): first($list[] | select(.name | ascii_downcase == ($w | ascii_downcase))) // empty;
     if ($w | test("^[0-9]+$")) and (($w | tonumber) >= 1) and (($w | tonumber) <= length) then .[($w | tonumber) - 1]
-    else first(.[] | select(.name | ascii_downcase == ($w | ascii_downcase))) // empty end')
+    else (named(.) // named($all)) end' <<<"$shown")
   [[ -n $preset ]] || { echo "No preset: $wanted" >&2; notify "No tiling preset “$wanted”"; exit 1; }
 
   IFS=$'\t' read -r name layout orientation ratio direction width < <(
@@ -144,7 +169,7 @@ $rule" >/dev/null 2>&1; then
   ;;
 
 *)
-  sed -n '3,12p' "$0" | sed 's/^# \{0,1\}//' >&2
+  sed -n '3,13p' "$0" | sed 's/^# \{0,1\}//' >&2
   exit 1
   ;;
 esac

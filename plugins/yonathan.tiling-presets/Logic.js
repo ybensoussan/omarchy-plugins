@@ -11,7 +11,14 @@ var LAYOUTS = [
 ]
 var ORIENTATIONS = ["left", "right", "top", "bottom", "center"]
 var DIRECTIONS = ["right", "left", "down", "up"]
-var MAX_PRESETS = 9
+var MAX_PRESETS = 18
+var MAX_SHOWN = 9
+var MONITORS = [
+  { id: "any", label: "Any monitor" },
+  { id: "landscape", label: "Landscape" },
+  { id: "portrait", label: "Portrait" }
+]
+var PORTRAIT_ASPECT = 0.62
 
 function clone(value) { return JSON.parse(JSON.stringify(value)) }
 
@@ -29,7 +36,7 @@ function cap(word) { return word.charAt(0).toUpperCase() + word.slice(1) }
 function percent(v) { return Math.round(v * 100) + "%" }
 
 function blank(name) {
-  return { name: name || "New preset", layout: "master", orientation: "left", ratio: 0.6, direction: "right", columnWidth: 0.5 }
+  return { name: name || "New preset", layout: "master", orientation: "left", ratio: 0.6, direction: "right", columnWidth: 0.5, monitor: "any" }
 }
 
 // One line saying what a preset does, e.g. "Master · main on the left · 60%".
@@ -44,6 +51,16 @@ function describe(p) {
     return info.label + " · " + axis + " " + percent(p.columnWidth) + " · " + p.direction
   }
   return info.label
+}
+
+// " · portrait only" for a preset that is offered on one kind of monitor.
+function scope(p) {
+  return p.monitor === "portrait" || p.monitor === "landscape" ? " · " + p.monitor + " only" : ""
+}
+
+// How many of these presets a monitor of the given orientation offers (each needs a number key).
+function offered(presets, orientation) {
+  return presets.filter(function(p) { return !p.monitor || p.monitor === "any" || p.monitor === orientation }).length
 }
 
 function uniqueName(presets, base) {

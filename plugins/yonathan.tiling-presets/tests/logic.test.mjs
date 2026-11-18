@@ -7,7 +7,7 @@ import vm from "node:vm"
 
 const source = readFileSync(fileURLToPath(new URL("../Logic.js", import.meta.url)), "utf8").replace(".pragma library", "")
 const L = {}
-vm.runInNewContext(source + "\nObject.assign(out, { previewRects, describe, uniqueName, blank, strip })", { out: L })
+vm.runInNewContext(source + "\nObject.assign(out, { previewRects, describe, uniqueName, blank, strip, scope, offered })", { out: L })
 const plain = value => JSON.parse(JSON.stringify(value))
 const area = rects => rects.reduce((sum, r) => sum + r.w * r.h, 0)
 const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} !== ${b}`)
@@ -75,4 +75,21 @@ test("describe reads as a sentence fragment", () => {
 test("uniqueName numbers a clash, ignoring case", () => {
   assert.equal(L.uniqueName([{ name: "Focus" }], "Brand new"), "Brand new")
   assert.equal(L.uniqueName([{ name: "Focus" }, { name: "focus 2" }], "Focus"), "Focus 3")
+})
+
+test("scope names the one orientation a preset is limited to", () => {
+  assert.equal(L.scope({ monitor: "portrait" }), " · portrait only")
+  assert.equal(L.scope({ monitor: "landscape" }), " · landscape only")
+  assert.equal(L.scope({ monitor: "any" }), "")
+  assert.equal(L.scope({}), "")
+})
+
+test("offered counts what a monitor shows", () => {
+  const list = [{ monitor: "any" }, { monitor: "portrait" }, { monitor: "landscape" }, {}]
+  assert.equal(L.offered(list, "portrait"), 3)
+  assert.equal(L.offered(list, "landscape"), 3)
+})
+
+test("a new preset is offered everywhere", () => {
+  assert.equal(L.blank().monitor, "any")
 })

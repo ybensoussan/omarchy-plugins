@@ -1,9 +1,11 @@
 [
   { "name": "Tiled", "layout": "dwindle" },
-  { "name": "Main + stack", "layout": "master", "orientation": "left", "ratio": 0.6 },
-  { "name": "Stack + main", "layout": "master", "orientation": "right", "ratio": 0.6 },
+  { "name": "Main + stack", "layout": "master", "orientation": "left", "ratio": 0.6, "monitor": "landscape" },
+  { "name": "Stack + main", "layout": "master", "orientation": "right", "ratio": 0.6, "monitor": "landscape" },
   { "name": "Main on top", "layout": "master", "orientation": "top", "ratio": 0.6 },
-  { "name": "Centered main", "layout": "master", "orientation": "center", "ratio": 0.5 },
-  { "name": "Columns", "layout": "scrolling", "direction": "right", "columnWidth": 0.5 },
+  { "name": "Main on bottom", "layout": "master", "orientation": "bottom", "ratio": 0.6, "monitor": "portrait" },
+  { "name": "Centered main", "layout": "master", "orientation": "center", "ratio": 0.5, "monitor": "landscape" },
+  { "name": "Columns", "layout": "scrolling", "direction": "right", "columnWidth": 0.5, "monitor": "landscape" },
+  { "name": "Rows", "layout": "scrolling", "direction": "down", "columnWidth": 0.5, "monitor": "portrait" },
   { "name": "Focus", "layout": "monocle" }
 ]

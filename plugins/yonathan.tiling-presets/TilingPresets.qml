@@ -41,6 +41,8 @@ Item {
   readonly property string script: String(Qt.resolvedUrl("bin/tiling-preset")).replace(/^file:\/\//, "")
   property var st: null
   readonly property var presets: st ? st.presets : []
+  readonly property var allPresets: st ? st.all : []
+  readonly property bool portrait: st ? st.portrait : false
   readonly property int previewDefault: st ? L.clamp(st.windows, 3, 6) : 4
   property var afterLoad: null
 
@@ -68,15 +70,15 @@ Item {
   Process {
     id: saveProc
     property bool thenApply: false
-    property int applyIndex: 0
+    property string applyName: ""
     onExited: function(code) {
       if (code !== 0) { root.fail("Could not save the presets."); return }
-      var apply = saveProc.thenApply, index = saveProc.applyIndex
+      var apply = saveProc.thenApply, name = saveProc.applyName
       saveProc.thenApply = false
       root.load(function() {
         root.adoptSaved()
         root.setStatus(apply ? "Saved and applied." : "Saved.")
-        if (apply) Quickshell.execDetached([root.script, "apply", String(index + 1)])
+        if (apply) Quickshell.execDetached([root.script, "apply", name])
       })
     }
   }
@@ -168,12 +170,13 @@ Item {
   function edit(fn) { var d = L.clone(draft); fn(d); draft = d }
 
   function adoptSaved() {
-    draft = L.clone(presets)
+    draft = L.clone(allPresets)
     savedJson = JSON.stringify(draft)
     sel = Math.max(0, Math.min(sel, draft.length - 1))
   }
 
-  function openEditor(index) {
+  // `index` counts the whole list; `name` picks a preset by name (the picker only knows the ones it shows).
+  function openEditor(index, name) {
     setStatus("")
     if (index !== undefined && index >= 0) sel = index
     editorOpen = true
@@ -181,7 +184,13 @@ Item {
     load(function() {
       adoptSaved()
       previewCount = previewDefault
+      if (name) for (var i = 0; i < draft.length; i++) if (draft[i].name === name) sel = i
     })
+  }
+
+  function editShown(i) {
+    closePicker()
+    openEditor(undefined, i >= 0 && i < presets.length ? presets[i].name : "")
   }
 
   function closeEditor() { editorOpen = false; draft = null; confirmAction = null }
@@ -195,7 +204,7 @@ Item {
     if (!draft || problems.length) return
     var list = L.clone(draft).map(function(p) { p.name = p.name.trim(); return p })
     saveProc.thenApply = !!thenApply
-    saveProc.applyIndex = sel
+    saveProc.applyName = current ? current.name.trim() : ""
     saveProc.command = ["sh", "-c", "printf %s \"$1\" | \"$2\" save", "sh", JSON.stringify(list), script]
     saveProc.running = true
     setStatus("Saving…")
@@ -283,7 +292,7 @@ Item {
           var cols = panel.columns
           var digit = event.key - Qt.Key_1
           if (event.key === Qt.Key_Escape) root.closePicker()
-          else if (event.key === Qt.Key_E) { root.closePicker(); root.openEditor(root.sel) }
+          else if (event.key === Qt.Key_E) root.editShown(root.sel)
           else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) root.applyPreset(root.sel)
           else if (digit >= 0 && digit < 9 && digit < n) root.applyPreset(digit)
           else if (n === 0) return
@@ -317,7 +326,7 @@ Item {
             anchors.verticalCenter: titleText.verticalCenter
             width: parent.width - titleText.width - parent.spacing
             elide: Text.ElideRight
-            text: root.st ? "for " + (root.st.name || root.st.workspace) + " · " + root.st.windows + (root.st.windows === 1 ? " window" : " windows") : ""
+            text: root.st ? "for " + (root.st.name || root.st.workspace) + (root.portrait ? " · portrait display" : "") + " · " + root.st.windows + (root.st.windows === 1 ? " window" : " windows") : ""
             color: root.dim
             font.pixelSize: Style.font.bodySmall
           }
@@ -380,7 +389,7 @@ Item {
                   anchors.fill: parent
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
-                  onClicked: { root.closePicker(); root.openEditor(tile.index) }
+                  onClicked: root.editShown(tile.index)
                 }
               }
 
@@ -389,9 +398,9 @@ Item {
                 x: Style.space(10); y: Style.space(10)
                 width: parent.width - 2 * Style.space(10)
                 spacing: Style.space(6)
-                LayoutPreview {
+                PreviewBox {
                   width: parent.width
-                  height: Math.round(width / 1.6)
+                  portrait: root.portrait
                   preset: tile.modelData
                   count: root.previewDefault
                   ink: tile.selected ? Color.menu.selectedText : root.fg
@@ -450,7 +459,7 @@ Item {
             compact: true
             icon: "󰏫"
             text: "Edit presets"
-            onClicked: { root.closePicker(); root.openEditor(root.sel) }
+            onClicked: root.editShown(root.sel)
           }
         }
       }
@@ -541,10 +550,11 @@ Item {
                   cursorShape: Qt.PointingHandCursor
                   onClicked: root.sel = row.index
                 }
-                LayoutPreview {
+                PreviewBox {
                   id: thumb
                   x: 8; anchors.verticalCenter: parent.verticalCenter
-                  width: 72; height: 45
+                  width: 72
+                  portrait: row.modelData.monitor === "portrait"
                   preset: row.modelData
                   count: root.previewCount
                 }
@@ -559,7 +569,7 @@ Item {
                   }
                   PText {
                     width: parent.width; elide: Text.ElideRight
-                    text: L.describe(row.modelData)
+                    text: L.describe(row.modelData) + L.scope(row.modelData)
                     color: root.dim
                     font.pixelSize: Style.font.caption
                   }
@@ -638,9 +648,9 @@ Item {
               id: previewCol
               width: 400
               spacing: 8
-              LayoutPreview {
+              PreviewBox {
                 width: parent.width
-                height: Math.round(width / 1.6)
+                portrait: !!root.current && root.current.monitor === "portrait"
                 preset: root.current
                 count: root.previewCount
               }
@@ -682,6 +692,21 @@ Item {
                     text: modelData.label
                     checked: root.current && root.current.layout === modelData.id
                     onClicked: root.edit(function(d) { d[root.sel].layout = modelData.id })
+                  }
+                }
+              }
+
+              Label { text: "OFFERED ON" }
+              Flow {
+                width: parent.width
+                spacing: 6
+                Repeater {
+                  model: L.MONITORS
+                  delegate: Btn {
+                    required property var modelData
+                    text: modelData.label
+                    checked: root.current && (root.current.monitor || "any") === modelData.id
+                    onClicked: root.edit(function(d) { d[root.sel].monitor = modelData.id })
                   }
                 }
               }
@@ -769,9 +794,10 @@ Item {
             color: root.dim
             font.pixelSize: Style.font.caption
             lineHeight: 1.3
-            text: "• Super + Shift + L opens the picker; press a preset's number (1-9) to apply it at once.\n"
+            text: "• Super + Shift + L opens the picker; press a preset's number (1-9) to apply it at once. It lists the presets\n"
+                + "   offered on the focused monitor, so a portrait monitor sees the portrait and any-monitor ones, numbered from 1.\n"
                 + "• To give a preset its own key, bind this in ~/.config/hypr/bindings.lua:\n"
-                + "     o.bind(\"SUPER + ALT + 1\", \"Tiling preset\", \"tiling-preset apply 1\")      (a number, or the preset's name)\n"
+                + "     o.bind(\"SUPER + ALT + 1\", \"Tiling preset\", \"tiling-preset apply 1\")      (a number among those shown, or the preset's name)\n"
                 + "• Applying a preset sticks to the workspace until you pick another layout (Super + L also replaces it).\n"
                 + "• The size of the main window is not remembered across a Hyprland reload; the layout and its direction are."
           }
@@ -803,7 +829,7 @@ Item {
             text: root.dirty ? "Save & Apply" : "Apply"
             enabled: !!root.current && root.problems.length === 0
             tooltip: "Apply the selected preset to the focused workspace"
-            onClicked: root.dirty ? root.save(true) : Quickshell.execDetached([root.script, "apply", String(root.sel + 1)])
+            onClicked: root.dirty ? root.save(true) : Quickshell.execDetached([root.script, "apply", root.current.name.trim()])
           }
         }
       }
