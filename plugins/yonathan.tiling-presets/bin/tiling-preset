@@ -1,0 +1,150 @@
+#!/bin/bash
+
+# Tiling presets for the focused workspace. Presets live in
+# ~/.config/omarchy/tiling-presets.json (seeded from ../defaults.json) and are
+# edited with the "Tiling Presets" plugin: omarchy-shell shell toggle yonathan.tiling-presets '{"mode":"edit"}'
+#
+#   tiling-preset state            JSON for the plugin: focused workspace, its preset, all presets
+#   tiling-preset list             the presets as JSON
+#   tiling-preset apply <name|n>   apply a preset (by name, or its 1-based position) to the focused workspace
+#   tiling-preset defaults         the built-in presets as JSON
+#   tiling-preset save             replace the presets with the JSON array on stdin (validated)
+
+DIR=$(dirname "$(dirname "$(readlink -f "$0")")")
+CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/tiling-presets.json
+STATE=${XDG_STATE_HOME:-$HOME/.local/state}/omarchy
+MODES_DIR=$STATE/workspace-layouts
+APPLIED=$STATE/tiling-presets-applied.json
+
+# One place decides what a valid preset is, whether it came from the file, the
+# GUI or a hand edit: unknown values fall back, numbers are clamped, at most 9.
+SANITIZE='
+  def clamp($lo; $hi): if . < $lo then $lo elif . > $hi then $hi else . end;
+  def num($d; $lo; $hi): ((tonumber? // $d) | clamp($lo; $hi) | . * 100 | round / 100);
+  [ .[]? | select(type == "object") | {
+      name: ((.name // "") | tostring | gsub("^\\s+|\\s+$"; "") | .[0:40]),
+      layout: (if (.layout | IN("dwindle", "master", "scrolling", "monocle")) then .layout else "dwindle" end),
+      orientation: (if (.orientation | IN("left", "right", "top", "bottom", "center")) then .orientation else "left" end),
+      ratio: ((.ratio // 0.55) | num(0.55; 0.1; 0.9)),
+      direction: (if (.direction | IN("right", "left", "down", "up")) then .direction else "right" end),
+      columnWidth: ((.columnWidth // 0.5) | num(0.5; 0.1; 1))
+    } | select(.name != "") ] | .[0:9]'
+
+presets() {
+  [[ -s $CONFIG ]] || { mkdir -p "$(dirname "$CONFIG")" && jq "$SANITIZE" "$DIR/defaults.json" >"$CONFIG"; }
+  jq "$SANITIZE" "$CONFIG" 2>/dev/null || jq "$SANITIZE" "$DIR/defaults.json"
+}
+
+notify() {
+  local state="$STATE/workspace-layout-notification" last id
+  [[ -r $state ]] && read -r last <"$state"
+  if id=$(omarchy-notification-send -p -r "${last:-0}" -g 󱂬 "$1") && [[ $id =~ ^[0-9]+$ ]]; then
+    mkdir -p "$(dirname "$state")" && printf '%s\n' "$id" >"$state"
+  fi
+}
+
+# Named workspaces report a negative id and Hyprland reads a leading "-" as relative.
+active_workspace() {
+  hyprctl activeworkspace -j | jq -r '"\(.id)\t\(.name)\t\(.windows)"'
+}
+
+current_name() {
+  local ws=$1 layout
+  layout=$(omarchy-hyprland-workspace-layout-current "$ws" 2>/dev/null)
+  jq -r --arg ws "$ws" --arg layout "$layout" \
+    '.[$ws] | select(. != null and .layout == $layout) | .name' "$APPLIED" 2>/dev/null
+}
+
+case ${1:-} in
+list)
+  presets
+  ;;
+
+state)
+  IFS=$'\t' read -r ws wsname windows < <(active_workspace)
+  current=
+  [[ $ws =~ ^[0-9]+$ ]] && current=$(current_name "$ws")
+  presets | jq --arg ws "$ws" --arg name "$wsname" --argjson windows "${windows:-0}" --arg current "$current" \
+    '{ workspace: $ws, name: $name, windows: $windows, current: $current, presets: . }'
+  ;;
+
+defaults)
+  jq "$SANITIZE" "$DIR/defaults.json"
+  ;;
+
+save)
+  new=$(jq "$SANITIZE") || exit 1
+  mkdir -p "$(dirname "$CONFIG")"
+  printf '%s\n' "$new" >"$CONFIG.tmp" && mv "$CONFIG.tmp" "$CONFIG"
+  ;;
+
+apply)
+  wanted=${2:-}
+  [[ -n $wanted ]] || { echo "Usage: tiling-preset apply <name|number>" >&2; exit 1; }
+
+  IFS=$'\t' read -r ws _ _ < <(active_workspace)
+  if ! [[ $ws =~ ^[0-9]+$ ]] || ((ws < 1)); then
+    notify "Tiling presets need a numbered workspace"
+    exit 1
+  fi
+
+  preset=$(presets | jq -c --arg w "$wanted" '
+    if ($w | test("^[0-9]+$")) and (($w | tonumber) >= 1) and (($w | tonumber) <= length) then .[($w | tonumber) - 1]
+    else first(.[] | select(.name | ascii_downcase == ($w | ascii_downcase))) // empty end')
+  [[ -n $preset ]] || { echo "No preset: $wanted" >&2; notify "No tiling preset “$wanted”"; exit 1; }
+
+  IFS=$'\t' read -r name layout orientation ratio direction width < <(
+    jq -r '[.name, .layout, .orientation, .ratio, .direction, .columnWidth] | @tsv' <<<"$preset")
+
+  # Only whitelisted words and clamped numbers reach the Lua below; the name never does.
+  opts=
+  case $layout in
+  master) opts="layout_opts = { orientation = \"$orientation\" }" ;;
+  scrolling) opts="layout_opts = { direction = \"$direction\" }" ;;
+  esac
+
+  rule="hl.workspace_rule({ workspace = \"$ws\", layout = \"$layout\"${opts:+, $opts} })"
+  mode="o.workspace_mode({ workspace = \"$ws\", mode = \"$layout\" })"
+
+  if ! hyprctl eval "$mode
+$rule" >/dev/null 2>&1; then
+    notify "Could not apply “$name”"
+    exit 1
+  fi
+
+  # The ratio and column width are layout messages, which act on the focused workspace.
+  case $layout in
+  master)
+    sleep 0.15
+    hyprctl dispatch "hl.dsp.layout(\"mfact exact $ratio\")" >/dev/null 2>&1
+    ;;
+  scrolling)
+    sleep 0.15
+    hyprctl dispatch "hl.dsp.layout(\"colresize all $width\")" >/dev/null 2>&1
+    ;;
+  esac
+
+  # Saved the way Super + L saves a layout, so it comes back on a config reload
+  # and the next Super + L replaces or removes it. A plain default layout needs no file.
+  mkdir -p "$MODES_DIR"
+  if [[ -z $opts && $layout == "$(omarchy-hyprland-workspace-layout-default)" ]]; then
+    rm -f "$MODES_DIR/$ws.lua"
+  else
+    printf '%s\n%s\n' "$mode" "$rule" >"$MODES_DIR/$ws.lua"
+  fi
+
+  mkdir -p "$STATE"
+  [[ -s $APPLIED ]] || echo '{}' >"$APPLIED"
+  jq --arg ws "$ws" --arg name "$name" --arg layout "$layout" '.[$ws] = { name: $name, layout: $layout }' \
+    "$APPLIED" >"$APPLIED.tmp" && mv "$APPLIED.tmp" "$APPLIED"
+
+  notify "$name"
+  omarchy-shell -q omarchy.workspaces refresh
+  omarchy-shell -q omarchy.dock refresh
+  ;;
+
+*)
+  sed -n '3,12p' "$0" | sed 's/^# \{0,1\}//' >&2
+  exit 1
+  ;;
+esac

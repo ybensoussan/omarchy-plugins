@@ -36,6 +36,12 @@ hl.unbind("SUPER + SHIFT + M")
 hl.unbind("SUPER + CTRL + M")
 o.bind("SUPER + SHIFT + M", "Move window to workspace", "omarchy-shell shell toggle yonathan.workspace-switcher move")
 
+-- Tiling presets (~/.config/omarchy/plugins/yonathan.tiling-presets): pick a preset layout for the
+-- focused workspace. In the picker 1-9 apply a preset; E edits them.
+o.bind("SUPER + SHIFT + L", "Tiling presets", "omarchy-shell shell toggle yonathan.tiling-presets")
+-- To give a preset its own key:
+-- o.bind("SUPER + ALT + 1", "Tiling preset 1", "tiling-preset apply 1")
+
 hl.unbind("SUPER + N")
 o.bind("SUPER + N", "Launcher", "omarchy-shell shell toggle jvdp.launcher")
 -- Override Omarchy's editor launcher on this shortcut.

@@ -26,17 +26,20 @@ The live copies are the source of truth for day-to-day use. The repo holds copie
 
 Each plugin dir has a `manifest.json` (`schemaVersion`, `id`, `kinds`, `entryPoints`, optional `barWidget` block). `id` must match the directory name and the id used in `omarchy/shell.json`. Kinds are `bar-widget` or `overlay`.
 
-Plugins: `bw-vault`, `yonathan.displays` (overlay, the Displays & Workspaces manager), `yonathan.monitor-profile`, `yonathan.tray` and `yonathan.workspaces` (clones of the stock `omarchy.tray` / `omarchy.workspaces`), `yonathan.workspace-backgrounds`, `yonathan.workspace-switcher` (overlay, layer-shell, opened by `SUPER+M`/`SUPER+SHIFT+M`), `yonathan.next-meeting` (bar widget; needs a local venv and an untracked `~/.config/omarchy/next-meeting.url` secret), `yonathan.remmina-launcher` and `jvdp.launcher` (third-party menu plugin vendored from `jvdp11/omarchy-launcher`, has its own Python backend/tests), `yonathan.nag` (overlays; each needs a float/center window rule in `hypr/hyprland.lua`). The live `~/.config/omarchy/plugins/yonathan.bw-vault` holds only a `.bak` file and is intentionally not tracked.
+Plugins: `bw-vault`, `yonathan.displays` (overlay, the Displays & Workspaces manager), `yonathan.monitor-profile`, `yonathan.tray` and `yonathan.workspaces` (clones of the stock `omarchy.tray` / `omarchy.workspaces`), `yonathan.workspace-backgrounds`, `yonathan.workspace-switcher` (overlay, layer-shell, opened by `SUPER+M`/`SUPER+SHIFT+M`), `yonathan.next-meeting` (bar widget; needs a local venv and an untracked `~/.config/omarchy/next-meeting.url` secret), `yonathan.remmina-launcher` and `jvdp.launcher` (third-party menu plugin vendored from `jvdp11/omarchy-launcher`, has its own Python backend/tests), `yonathan.nag` and `yonathan.tiling-presets` (overlays; each needs a float/center window rule in `hypr/hyprland.lua`). The live `~/.config/omarchy/plugins/yonathan.bw-vault` holds only a `.bak` file and is intentionally not tracked.
 
 Tests (plain Node, no deps):
 ```sh
 node plugins/yonathan.displays/tests/logic.test.mjs
 node plugins/yonathan.workspaces/tests/order.test.cjs
 node --test plugins/yonathan.workspace-switcher/tests/model.test.mjs
+node --test plugins/yonathan.tiling-presets/tests/logic.test.mjs
 python3 -m unittest discover -s share/display-profiles/tests
 ```
 
 ## How the pieces connect
+
+- `yonathan.tiling-presets/bin/tiling-preset` is not copied by `install.sh`'s `bin/` step: it locates the plugin from its own real path, so `~/.local/bin/tiling-preset` must be a symlink to it.
 
 - `hypr/bindings.lua` binds keys to `bin/*` scripts, `omarchy menu summon ...`, and `omarchy-shell ... yonathan.<plugin> ...`.
 - `omarchy/extensions/omarchy-menu.jsonc` entries call `omarchy-display-profiles`, `omarchy-workspace-switch`, `omarchy-workspace-move-window`.

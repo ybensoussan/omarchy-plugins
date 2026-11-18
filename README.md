@@ -28,6 +28,7 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
 | `yonathan.next-meeting` | bar widget (Productivity) | Shows the next meeting today with a countdown (hidden when none is left) and opens its Teams link in the Teams PWA on click. `next-meeting.py` reads a published Outlook ICS URL from `~/.config/omarchy/next-meeting.url` (not in the repo; must be published with "Can view all details"). Setup: `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt` inside the plugin dir. |
 | `jvdp.launcher` | menu (kept loaded) | Third-party all-in-one launcher by jvdp ([jvdp11/omarchy-launcher](https://github.com/jvdp11/omarchy-launcher)): apps, Omarchy commands, files, calculator, clipboard, emoji, snippets, quicklinks and more, with a Python backend. Vendored here as a copy. Toggle with `omarchy-shell shell toggle jvdp.launcher`. |
 | `yonathan.nag` | overlay (kept loaded) | Single-line bar for throwaway reminders, e.g. `nag pizza in 15m`, `tea 1h30m`, `call mom at 14:30`. Hands off to `omarchy reminder`. Opened with `SUPER+SHIFT+P`; floated and centered by a window rule in `hyprland.lua`. |
+| `yonathan.tiling-presets` | overlay (kept loaded) | Preset tiling layouts for the focused workspace. `SUPER+SHIFT+L` opens a picker of cards, each with a miniature of the layout; 1-9 or Enter applies one, E (or the pencil on a card) edits it. A floating editor window (themed like Displays & Workspaces) adds, renames, reorders, duplicates and deletes presets and sets each one's layout (dwindle, master, scrolling, monocle), main-window side and size (master), and scrolling direction and column width, with a live preview. Presets are stored in `~/.config/omarchy/tiling-presets.json` (seeded from `defaults.json`). `bin/tiling-preset` (`apply <number or name>`, `state`, `list`, `save`) does the work through `hyprctl eval` and saves the choice like `SUPER+L` does, so it survives a reload; it can be bound to a key directly. It finds the plugin through its own path, so install it as a symlink: `ln -s ~/.config/omarchy/plugins/yonathan.tiling-presets/bin/tiling-preset ~/.local/bin/`. Needs `master.new_status = "slave"` in `looknfeel.lua` (global; Hyprland has no per-workspace form) for the first window to stay the main one. Logic in `Logic.js` (tests in `tests/`). Floated and centered by a window rule in `hyprland.lua`. |
 
 ## Omarchy settings (`omarchy/`)
 
@@ -38,7 +39,7 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
     - Left: Omarchy menu, `yonathan.workspaces`, `yonathan.workspace-backgrounds`.
     - Center: keyboard layout, indicators, clock (`dddd HH:mm`, alt format `d MMMM 'W'ww yyyy`), `yonathan.next-meeting`, weather, system update.
     - Right: `yonathan.monitor-profile`, `yonathan.tray`, `bw-vault`, notification center, tailscale, agents, bluetooth, network, monitor, audio, power.
-  - `plugins`: loaded plugins (`yonathan.displays`, `yonathan.remmina-launcher`, `yonathan.nag`, `bw-vault`, `jvdp.launcher`).
+  - `plugins`: loaded plugins (`yonathan.displays`, `yonathan.remmina-launcher`, `yonathan.nag`, `yonathan.tiling-presets`, `bw-vault`, `jvdp.launcher`).
 - **`extensions/omarchy-menu.jsonc`**: adds to the Omarchy menu (`omarchy menu summon <name>`):
   - `trigger.displays`: open Displays & Workspaces.
   - `trigger.monitor-profile.*`: apply a display profile (`omarchy-display-profiles apply <name>`).
@@ -52,7 +53,7 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
 
 - **`hyprland.lua`**: entry point. Loads the Omarchy defaults, then `monitors`, `input`, `bindings`, `looknfeel`, `autostart`, and the generated `workspace-profile.lua`.
 - **`monitors.lua`**: default monitor rule (preferred mode, auto position, scale 1) plus an `omarchy-display-profiles`-managed block for the internal panel (`eDP-1`).
-- **`input.lua`**, **`looknfeel.lua`**: personal override files; currently only commented examples (Omarchy defaults apply).
+- **`input.lua`**, **`looknfeel.lua`**: personal override files; mostly commented examples (Omarchy defaults apply). `looknfeel.lua` sets `master.new_status = "slave"` so new windows join the master layout's stack.
 - **`bindings.lua`**: custom keybindings.
 
   | Key | Action |
@@ -65,6 +66,7 @@ Not included: third-party plugins (e.g. `jankeesvw.notification-center`, which h
   | `SUPER+SHIFT+ALT+arrows` | Move window to the workspace on the monitor in that direction |
   | `SUPER+R` | Remmina launcher (`yonathan.remmina-launcher` plugin) |
   | `SUPER+SHIFT+P` | Disposable alarm (`yonathan.nag` plugin) |
+  | `SUPER+SHIFT+L` | Tiling presets picker (`yonathan.tiling-presets` plugin) |
 - **`autostart.lua`**: starts `omarchy-display-profiles watch` (auto-switch profile on monitor changes), launches the daily apps (opencode, Zen, Zed, Remmina, Slack, Chromium web apps) and uses window rules to place each on its workspace. Also points `SSH_AUTH_SOCK` at the systemd user `ssh-agent.socket`.
 - **`workspace-profile.lua`**: *generated* by `omarchy-display-profiles` for the active profile. Don't edit by hand; use the Displays & Workspaces manager.
 - **`workspace-order.json`**: generated per-monitor workspace slots (name, hidden) for the active profile; read by the bar widget.

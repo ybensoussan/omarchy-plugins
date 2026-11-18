@@ -41,6 +41,7 @@ end
 
 -- Displays & Workspaces manager: always float and center
 o.window({ class = "org.quickshell", title = "Displays & Workspaces" }, { float = true, center = true })
+o.window({ class = "org.quickshell", title = "Tiling Presets" }, { float = true, center = true })
 o.window({ class = "org.quickshell", title = "App Launcher" }, { float = true, center = true })
 o.window({ class = "org.quickshell", title = "Remmina Launcher" }, { float = true, center = true })
 o.window({ class = "org.quickshell", title = "Disposable Alarms" }, { float = true, center = true })

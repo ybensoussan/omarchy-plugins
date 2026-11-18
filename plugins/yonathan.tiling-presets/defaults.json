@@ -1,0 +1,9 @@
+[
+  { "name": "Tiled", "layout": "dwindle" },
+  { "name": "Main + stack", "layout": "master", "orientation": "left", "ratio": 0.6 },
+  { "name": "Stack + main", "layout": "master", "orientation": "right", "ratio": 0.6 },
+  { "name": "Main on top", "layout": "master", "orientation": "top", "ratio": 0.6 },
+  { "name": "Centered main", "layout": "master", "orientation": "center", "ratio": 0.5 },
+  { "name": "Columns", "layout": "scrolling", "direction": "right", "columnWidth": 0.5 },
+  { "name": "Focus", "layout": "monocle" }
+]

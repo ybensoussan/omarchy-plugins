@@ -48,3 +48,17 @@
 --     column_width = 0.97,
 --   },
 -- })
+
+-- Opt another application in to Omarchy's standard transparency.
+-- Find its class with: hyprctl clients
+-- o.transparent_window("my-app")
+-- o.transparent_window("my-app", "0.9 0.85") -- Custom active/inactive opacity.
+
+-- Master layout (used by the Tiling Presets): new windows join the stack, so the
+-- first window you open stays the main one. Omarchy's default is "master", where
+-- the newest window takes over the main area.
+hl.config({
+  master = {
+    new_status = "slave",
+  },
+})

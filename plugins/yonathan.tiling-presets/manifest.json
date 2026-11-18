@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "yonathan.tiling-presets",
+  "name": "Tiling Presets",
+  "version": "1.0.0",
+  "author": "yonathan",
+  "description": "Pick a preset tiling layout for the focused workspace with a hotkey, and edit the presets in a small GUI.",
+  "kinds": ["overlay"],
+  "keepLoaded": true,
+  "entryPoints": {
+    "overlay": "TilingPresets.qml"
+  }
+}
