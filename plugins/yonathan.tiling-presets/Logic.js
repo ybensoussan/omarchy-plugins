@@ -9,11 +9,7 @@ var LAYOUTS = [
   { id: "scrolling", label: "Scrolling", blurb: "Columns on an endless strip you scroll along." },
   { id: "monocle", label: "Monocle", blurb: "Every window full size, one on top at a time." }
 ]
-var ORIENTATIONS = ["left", "right", "top", "bottom", "center", "middle"]
-var ORIENTATION_LABELS = {
-  left: "Left", right: "Right", top: "Top", bottom: "Bottom",
-  center: "Center (others at the sides)", middle: "Middle (others above and below)"
-}
+var ORIENTATIONS = ["left", "right", "top", "bottom", "center"]
 var DIRECTIONS = ["right", "left", "down", "up"]
 var MAX_PRESETS = 18
 var MAX_SHOWN = 9
@@ -47,9 +43,7 @@ function blank(name) {
 function describe(p) {
   var info = layoutInfo(p.layout)
   if (p.layout === "master") {
-    var where = p.orientation === "center" ? "main in the centre"
-      : p.orientation === "middle" ? "main in the middle, others above and below"
-      : "main on the " + p.orientation
+    var where = p.orientation === "center" ? "main in the centre" : "main on the " + p.orientation
     return info.label + " · " + where + " · " + percent(p.ratio)
   }
   if (p.layout === "scrolling") {
@@ -119,16 +113,6 @@ function previewRects(p, n, aspect) {
     if (n === 1) return [full]
     var ori = p.orientation || "left"
     var slaves = n - 1
-    if (ori === "middle") {
-      // the first window is the main band; the next goes above it, the one after below, and so on
-      var above = Math.ceil(slaves / 2), below = slaves - above
-      var band = below === 0 ? 1 - r : (1 - r) / 2
-      var up = strip({ x: 0, y: 0, w: 1, h: band }, above, "x")
-      var down = below > 0 ? strip({ x: 0, y: band + r, w: 1, h: band }, below, "x") : []
-      out.push({ x: 0, y: band, w: 1, h: r })
-      for (var k = 0; k < slaves; k++) out.push(k % 2 === 0 ? up[k / 2] : down[(k - 1) / 2])
-      return out
-    }
     if (ori === "center" && slaves < 2) ori = "left"
     if (ori === "left" || ori === "right") {
       var mx = ori === "left" ? 0 : 1 - r

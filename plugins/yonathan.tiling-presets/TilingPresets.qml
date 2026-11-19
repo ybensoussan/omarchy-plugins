@@ -724,7 +724,7 @@ Item {
                     model: L.ORIENTATIONS
                     delegate: Btn {
                       required property string modelData
-                      text: L.ORIENTATION_LABELS[modelData]
+                      text: L.cap(modelData)
                       checked: root.current && root.current.orientation === modelData
                       onClicked: root.edit(function(d) { d[root.sel].orientation = modelData })
                     }
@@ -794,10 +794,12 @@ Item {
             color: root.dim
             font.pixelSize: Style.font.caption
             lineHeight: 1.3
-            text: "• Super + Shift + L opens the picker for the focused monitor; its number keys (1-9) apply a preset at once.\n"
-                + "• Bind a preset to its own key in ~/.config/hypr/bindings.lua with  tiling-preset apply 1  (a number or its name).\n"
-                + "• A preset sticks to its workspace until you pick another layout. After a Hyprland reload the main-window size is\n"
-                + "   kept for “Middle” but not for the other Master layouts."
+            text: "• Super + Shift + L opens the picker; press a preset's number (1-9) to apply it at once. It lists the presets\n"
+                + "   offered on the focused monitor, so a portrait monitor sees the portrait and any-monitor ones, numbered from 1.\n"
+                + "• To give a preset its own key, bind this in ~/.config/hypr/bindings.lua:\n"
+                + "     o.bind(\"SUPER + ALT + 1\", \"Tiling preset\", \"tiling-preset apply 1\")      (a number among those shown, or the preset's name)\n"
+                + "• Applying a preset sticks to the workspace until you pick another layout (Super + L also replaces it).\n"
+                + "• The size of the main window is not remembered across a Hyprland reload; the layout and its direction are."
           }
         }
       }
