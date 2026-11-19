@@ -24,11 +24,14 @@ SANITIZE='
   def num($d; $lo; $hi): ((tonumber? // $d) | clamp($lo; $hi) | . * 100 | round / 100);
   [ .[]? | select(type == "object") | {
       name: ((.name // "") | tostring | gsub("^\\s+|\\s+$"; "") | .[0:40]),
-      layout: (if (.layout | IN("dwindle", "master", "scrolling", "monocle")) then .layout else "dwindle" end),
+      layout: (if (.layout | IN("dwindle", "master", "scrolling", "monocle", "tiles")) then .layout else "dwindle" end),
       orientation: (if (.orientation | IN("left", "right", "top", "bottom", "center")) then .orientation else "left" end),
       ratio: ((.ratio // 0.55) | num(0.55; 0.1; 0.9)),
       direction: (if (.direction | IN("right", "left", "down", "up")) then .direction else "right" end),
       columnWidth: ((.columnWidth // 0.5) | num(0.5; 0.1; 1)),
+      axis: (if (.axis | IN("vertical", "horizontal")) then .axis else "vertical" end),
+      tiles: ((.tiles // [25, 50, 25]) | if type == "array" then [.[] | (tonumber? // empty) | clamp(5; 100) | round] else [25, 50, 25] end
+              | if length >= 1 and length <= 8 then . else [25, 50, 25] end),
       monitor: (if (.monitor | IN("any", "landscape", "portrait")) then .monitor else "any" end)
     } | select(.name != "") ] | .[0:18]'
 
@@ -118,21 +121,42 @@ apply)
     else (named(.) // named($all)) end' <<<"$shown")
   [[ -n $preset ]] || { echo "No preset: $wanted" >&2; notify "No tiling preset “$wanted”"; exit 1; }
 
-  IFS=$'\t' read -r name layout orientation ratio direction width < <(
-    jq -r '[.name, .layout, .orientation, .ratio, .direction, .columnWidth] | @tsv' <<<"$preset")
+  IFS=$'\t' read -r name layout orientation ratio direction width axis tiles < <(
+    jq -r '[.name, .layout, .orientation, .ratio, .direction, .columnWidth, .axis, (.tiles | map(tostring) | join(","))] | @tsv' <<<"$preset")
 
   # Only whitelisted words and clamped numbers reach the Lua below; the name never does.
+  # "tiles" is a custom layout (layouts.lua): rows or columns of the sizes the preset lists.
+  # Everything else is one of Hyprland's own.
   opts=
+  setup=
+  rule_layout=$layout
   case $layout in
   master) opts="layout_opts = { orientation = \"$orientation\" }" ;;
   scrolling) opts="layout_opts = { direction = \"$direction\" }" ;;
+  tiles)
+    rule_layout=lua:tp_tiles
+    lib=${DIR//\\/\\\\}; lib=${lib//\"/\\\"}
+    axis_key=y; [[ $axis == horizontal ]] && axis_key=x
+    setup="dofile(\"$lib/layouts.lua\")
+TilingPresets.set(\"$ws\", { axis = \"$axis_key\", tiles = { $tiles } })"
+    ;;
   esac
 
-  rule="hl.workspace_rule({ workspace = \"$ws\", layout = \"$layout\"${opts:+, $opts} })"
+  rule="hl.workspace_rule({ workspace = \"$ws\", layout = \"$rule_layout\"${opts:+, $opts} })"
   mode="o.workspace_mode({ workspace = \"$ws\", mode = \"$layout\" })"
 
-  if ! hyprctl eval "$mode
-$rule" >/dev/null 2>&1; then
+  # A custom layout is not one of Omarchy's modes, so the live change first puts the workspace
+  # back to a tiled mode (un-floating it), then switches the layout over that.
+  if [[ -n $setup ]]; then
+    live="o.workspace_mode({ workspace = \"$ws\", mode = \"dwindle\" })
+$setup
+$rule"
+  else
+    live="$mode
+$rule"
+  fi
+
+  if ! hyprctl eval "$live" >/dev/null 2>&1; then
     notify "Could not apply “$name”"
     exit 1
   fi
@@ -147,19 +171,27 @@ $rule" >/dev/null 2>&1; then
     sleep 0.15
     hyprctl dispatch "hl.dsp.layout(\"colresize all $width\")" >/dev/null 2>&1
     ;;
+  tiles)
+    # The state is already set; this makes a workspace that was already on the layout re-tile.
+    sleep 0.15
+    hyprctl dispatch "hl.dsp.layout(\"set $axis_key $tiles\")" >/dev/null 2>&1
+    ;;
   esac
 
   # Saved the way Super + L saves a layout, so it comes back on a config reload
   # and the next Super + L replaces or removes it. A plain default layout needs no file.
   mkdir -p "$MODES_DIR"
-  if [[ -z $opts && $layout == "$(omarchy-hyprland-workspace-layout-default)" ]]; then
+  if [[ -z $opts && -z $setup && $layout == "$(omarchy-hyprland-workspace-layout-default)" ]]; then
     rm -f "$MODES_DIR/$ws.lua"
+  elif [[ -n $setup ]]; then
+    printf '%s\n%s\n' "$setup" "$rule" >"$MODES_DIR/$ws.lua"
   else
     printf '%s\n%s\n' "$mode" "$rule" >"$MODES_DIR/$ws.lua"
   fi
 
   mkdir -p "$STATE"
   [[ -s $APPLIED ]] || echo '{}' >"$APPLIED"
+  layout=$(omarchy-hyprland-workspace-layout-current "$ws")
   jq --arg ws "$ws" --arg name "$name" --arg layout "$layout" '.[$ws] = { name: $name, layout: $layout }' \
     "$APPLIED" >"$APPLIED.tmp" && mv "$APPLIED.tmp" "$APPLIED"
 

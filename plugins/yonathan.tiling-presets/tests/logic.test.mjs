@@ -7,7 +7,7 @@ import vm from "node:vm"
 
 const source = readFileSync(fileURLToPath(new URL("../Logic.js", import.meta.url)), "utf8").replace(".pragma library", "")
 const L = {}
-vm.runInNewContext(source + "\nObject.assign(out, { previewRects, describe, uniqueName, blank, strip, scope, offered })", { out: L })
+vm.runInNewContext(source + "\nObject.assign(out, { previewRects, describe, uniqueName, blank, strip, scope, offered, MAX_TILES })", { out: L })
 const plain = value => JSON.parse(JSON.stringify(value))
 const area = rects => rects.reduce((sum, r) => sum + r.w * r.h, 0)
 const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} !== ${b}`)
@@ -20,6 +20,8 @@ test("tiled layouts fill the area exactly, whatever the window count", () => {
     { layout: "master", orientation: "top", ratio: 0.7 },
     { layout: "master", orientation: "bottom", ratio: 0.5 },
     { layout: "master", orientation: "center", ratio: 0.5 },
+    { layout: "tiles", axis: "vertical", tiles: [25, 50, 25] },
+    { layout: "tiles", axis: "horizontal", tiles: [30, 70] },
   ]) {
     for (let n = 1; n <= 7; n++) {
       const rects = L.previewRects(preset, n, 1.6)
@@ -92,4 +94,34 @@ test("offered counts what a monitor shows", () => {
 
 test("a new preset is offered everywhere", () => {
   assert.equal(L.blank().monitor, "any")
+})
+
+test("tiles: 25 / 50 / 25 from top to bottom, in opening order", () => {
+  const [a, b, c] = L.previewRects({ layout: "tiles", axis: "vertical", tiles: [25, 50, 25] }, 3)
+  assert.deepEqual(plain(a), { x: 0, y: 0, w: 1, h: 0.25 })
+  assert.deepEqual(plain(b), { x: 0, y: 0.25, w: 1, h: 0.5 })
+  assert.deepEqual(plain(c), { x: 0, y: 0.75, w: 1, h: 0.25 })
+})
+
+test("tiles: fewer windows share the whole area in the same proportions", () => {
+  const [a, b] = L.previewRects({ layout: "tiles", axis: "vertical", tiles: [25, 50, 25] }, 2)
+  close(a.h, 1 / 3)
+  close(b.y, 1 / 3)
+  close(b.h, 2 / 3)
+})
+
+test("tiles: extra windows share the last tile, side by side", () => {
+  const rects = L.previewRects({ layout: "tiles", axis: "vertical", tiles: [25, 50, 25] }, 5)
+  assert.equal(rects.length, 5)
+  close(rects[2].h, 0.25)
+  close(rects[2].w, 1 / 3)
+  assert.ok(rects[3].x > rects[2].x && rects[3].y === rects[2].y)
+  const cols = L.previewRects({ layout: "tiles", axis: "horizontal", tiles: [50, 50] }, 3)
+  close(cols[1].h, 0.5)
+  close(cols[2].y, 0.5)
+})
+
+test("describe lists the tile sizes", () => {
+  assert.equal(L.describe({ layout: "tiles", axis: "vertical", tiles: [25, 50, 25] }), "Tiles · rows 25 / 50 / 25")
+  assert.equal(L.describe({ layout: "tiles", axis: "horizontal", tiles: [30, 70] }), "Tiles · columns 30 / 70")
 })

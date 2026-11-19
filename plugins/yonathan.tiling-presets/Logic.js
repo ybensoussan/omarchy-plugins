@@ -7,12 +7,19 @@ var LAYOUTS = [
   { id: "dwindle", label: "Dwindle", blurb: "Splits the space in half for every new window." },
   { id: "master", label: "Master", blurb: "One main area, the rest stacked beside it." },
   { id: "scrolling", label: "Scrolling", blurb: "Columns on an endless strip you scroll along." },
-  { id: "monocle", label: "Monocle", blurb: "Every window full size, one on top at a time." }
+  { id: "monocle", label: "Monocle", blurb: "Every window full size, one on top at a time." },
+  { id: "tiles", label: "Tiles", blurb: "Your own rows or columns. Windows fill the tiles in the order they open; extra ones share the last tile." }
 ]
 var ORIENTATIONS = ["left", "right", "top", "bottom", "center"]
 var DIRECTIONS = ["right", "left", "down", "up"]
 var MAX_PRESETS = 18
 var MAX_SHOWN = 9
+var MAX_TILES = 8
+var MIN_TILE = 5
+var AXES = [
+  { id: "vertical", label: "Top to bottom" },
+  { id: "horizontal", label: "Left to right" }
+]
 var MONITORS = [
   { id: "any", label: "Any monitor" },
   { id: "landscape", label: "Landscape" },
@@ -36,7 +43,7 @@ function cap(word) { return word.charAt(0).toUpperCase() + word.slice(1) }
 function percent(v) { return Math.round(v * 100) + "%" }
 
 function blank(name) {
-  return { name: name || "New preset", layout: "master", orientation: "left", ratio: 0.6, direction: "right", columnWidth: 0.5, monitor: "any" }
+  return { name: name || "New preset", layout: "master", orientation: "left", ratio: 0.6, direction: "right", columnWidth: 0.5, axis: "vertical", tiles: [25, 50, 25], monitor: "any" }
 }
 
 // One line saying what a preset does, e.g. "Master · main on the left · 60%".
@@ -45,6 +52,9 @@ function describe(p) {
   if (p.layout === "master") {
     var where = p.orientation === "center" ? "main in the centre" : "main on the " + p.orientation
     return info.label + " · " + where + " · " + percent(p.ratio)
+  }
+  if (p.layout === "tiles") {
+    return info.label + " · " + (p.axis === "horizontal" ? "columns " : "rows ") + (p.tiles || []).join(" / ")
   }
   if (p.layout === "scrolling") {
     var axis = p.direction === "up" || p.direction === "down" ? "rows" : "columns"
@@ -94,6 +104,26 @@ function previewRects(p, n, aspect) {
 
   if (p.layout === "monocle") {
     for (var m = 0; m < n; m++) out.push({ x: full.x, y: full.y, w: 1, h: 1, z: n - m, step: m })
+    return out
+  }
+
+  if (p.layout === "tiles") {
+    var sizes = (p.tiles && p.tiles.length) ? p.tiles : [100]
+    var vert = p.axis !== "horizontal"
+    var used = Math.min(n, sizes.length)
+    var total = 0
+    for (var t = 0; t < used; t++) total += sizes[t]
+    var at = 0
+    for (var u = 0; u < used; u++) {
+      var len = sizes[u] / total
+      var tile = vert ? { x: 0, y: at, w: 1, h: len } : { x: at, y: 0, w: len, h: 1 }
+      if (u < used - 1) out.push(tile)
+      else {
+        var rest = n - u
+        strip(tile, rest, vert ? "x" : "y").forEach(function(r) { out.push(r) })
+      }
+      at += len
+    }
     return out
   }
 

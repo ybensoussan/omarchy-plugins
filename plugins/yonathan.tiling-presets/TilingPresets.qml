@@ -474,7 +474,7 @@ Item {
     title: "Tiling Presets"
     color: root.windowBg
     implicitWidth: 1040
-    implicitHeight: 700
+    implicitHeight: 780
     onVisibleChanged: if (!visible && root.editorOpen) root.closeEditor()
 
     FocusScope {
@@ -676,9 +676,17 @@ Item {
             }
 
             // ---- options ----
+            Flickable {
+              id: optionsFlick
+              width: main.width - previewCol.width - 22
+              height: Math.max(260, main.height - 44 - 3 * 14 - hotkeys.height)
+              contentHeight: options.implicitHeight
+              clip: true
+              boundsBehavior: Flickable.StopAtBounds
+
             Column {
               id: options
-              width: main.width - previewCol.width - 22
+              width: optionsFlick.width - 12
               spacing: 10
 
               Label { text: "LAYOUT" }
@@ -707,6 +715,64 @@ Item {
                     text: modelData.label
                     checked: root.current && (root.current.monitor || "any") === modelData.id
                     onClicked: root.edit(function(d) { d[root.sel].monitor = modelData.id })
+                  }
+                }
+              }
+
+              // tiles
+              Column {
+                visible: !!root.current && root.current.layout === "tiles"
+                width: parent.width
+                spacing: 10
+                Label { text: "TILES RUN" }
+                Flow {
+                  width: parent.width
+                  spacing: 6
+                  Repeater {
+                    model: L.AXES
+                    delegate: Btn {
+                      required property var modelData
+                      text: modelData.label
+                      checked: root.current && (root.current.axis || "vertical") === modelData.id
+                      onClicked: root.edit(function(d) { d[root.sel].axis = modelData.id })
+                    }
+                  }
+                }
+                Label { text: "TILE SIZES" }
+                Repeater {
+                  model: root.current && root.current.tiles ? root.current.tiles : []
+                  delegate: Row {
+                    id: tileRow
+                    required property int modelData
+                    required property int index
+                    spacing: 8
+                    PText { anchors.verticalCenter: parent.verticalCenter; width: 18; text: String(tileRow.index + 1); color: root.dim; font.bold: true }
+                    Slider {
+                      width: 140
+                      from: L.MIN_TILE; to: 90; step: 5
+                      value: tileRow.modelData
+                      onMoved: function(v) { root.edit(function(d) { d[root.sel].tiles[tileRow.index] = v }) }
+                    }
+                    PText { anchors.verticalCenter: parent.verticalCenter; width: 44; text: tileRow.modelData + "%"; font.bold: true }
+                    Btn {
+                      compact: true; icon: "󰅖"; tooltip: "Remove this tile"
+                      enabled: !!root.current && root.current.tiles.length > 1
+                      onClicked: root.edit(function(d) { d[root.sel].tiles.splice(tileRow.index, 1) })
+                    }
+                  }
+                }
+                Row {
+                  spacing: 10
+                  Btn {
+                    compact: true; icon: "󰐕"; text: "Add tile"
+                    enabled: !!root.current && root.current.tiles.length < L.MAX_TILES
+                    onClicked: root.edit(function(d) { d[root.sel].tiles.push(25) })
+                  }
+                  PText {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.current && root.current.tiles ? "Total " + root.current.tiles.reduce(function(a, b) { return a + b }, 0) + "% (scaled to fit)" : ""
+                    color: root.dim
+                    font.pixelSize: Style.font.caption
                   }
                 }
               }
@@ -784,9 +850,13 @@ Item {
                 font.pixelSize: Style.font.caption
               }
             }
+            }
           }
 
-          Item { width: 1; height: 4 }
+          Column {
+          id: hotkeys
+          width: parent.width
+          spacing: 6
           Label { text: "HOTKEYS" }
           PText {
             width: parent.width
@@ -794,12 +864,11 @@ Item {
             color: root.dim
             font.pixelSize: Style.font.caption
             lineHeight: 1.3
-            text: "• Super + Shift + L opens the picker; press a preset's number (1-9) to apply it at once. It lists the presets\n"
-                + "   offered on the focused monitor, so a portrait monitor sees the portrait and any-monitor ones, numbered from 1.\n"
-                + "• To give a preset its own key, bind this in ~/.config/hypr/bindings.lua:\n"
-                + "     o.bind(\"SUPER + ALT + 1\", \"Tiling preset\", \"tiling-preset apply 1\")      (a number among those shown, or the preset's name)\n"
-                + "• Applying a preset sticks to the workspace until you pick another layout (Super + L also replaces it).\n"
-                + "• The size of the main window is not remembered across a Hyprland reload; the layout and its direction are."
+            text: "• Super + Shift + L opens the picker for the focused monitor; its number keys (1-9) apply a preset at once.\n"
+                + "• Bind a preset to its own key in ~/.config/hypr/bindings.lua with  tiling-preset apply 1  (a number or its name).\n"
+                + "• A preset sticks to its workspace until you pick another layout. After a Hyprland reload the size of a Master\n"
+                + "   layout's main window is lost; Tiles keep their sizes."
+          }
           }
         }
       }
