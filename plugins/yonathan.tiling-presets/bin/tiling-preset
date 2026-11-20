@@ -145,55 +145,54 @@ TilingPresets.set(\"$ws\", { axis = \"$axis_key\", tiles = { $tiles } })"
   rule="hl.workspace_rule({ workspace = \"$ws\", layout = \"$rule_layout\"${opts:+, $opts} })"
   mode="o.workspace_mode({ workspace = \"$ws\", mode = \"$layout\" })"
 
-  # As few re-tiles as possible. Every layout switch re-tiles the workspace and resizes each
-  # window, and an app resized several times in quick succession can be left drawing an old-sized
-  # frame inside its new tile. So Omarchy's own mode call (which sets a layout of its own first,
-  # then ours on top) is only used to bring a floating workspace back to tiling, and the size
-  # message is sent only once, after the layout has really changed (a message sent in the same
-  # call would reach the old layout).
-  current_layout=$(omarchy-hyprland-workspace-layout-current "$ws")
-  tiled_before=$(hyprctl activeworkspace -j | jq -r '.tiledLayout // empty')
-
-  live=
-  [[ $current_layout == floating ]] && live="o.workspace_mode({ workspace = \"$ws\", mode = \"dwindle\" })
-"
-  [[ -n $setup ]] && live+="$setup
-"
-  live+="$rule"
-
-  if ! hyprctl eval "$live" >/dev/null 2>&1; then
-    notify "Could not apply “$name”"
-    exit 1
-  fi
-
-  # The size and column width are layout messages, which act on the focused workspace.
-  message=
+  # The saved file is the one way a layout is applied. Hyprland re-runs a file in this directory
+  # whenever it changes, which re-applies the workspace rule and re-tiles the workspace, so
+  # applying live as well would tile everything twice (and the second run would undo the size
+  # set in between): an app resized twice in quick succession can be left drawing an old-sized
+  # frame inside its new tile. The saved file therefore also sets the size, a moment after the
+  # rule lands (a layout message acts on the focused workspace, and reaches the old layout if
+  # sent in the same call), and only if its workspace is the focused one.
+  sizing=
   case $layout in
   master) message="mfact exact $ratio" ;;
   scrolling) message="colresize all $width" ;;
-  tiles)
-    # The sizes are already stored; a workspace that was on the layout already needs a re-tile to use them.
-    [[ $tiled_before == lua:tp_tiles ]] && message="set $axis_key $tiles"
-    ;;
+  *) message= ;;
   esac
+  [[ -n $message ]] && sizing="hl.timer(function()
+  local active = hl.get_active_workspace()
+  if active and tostring(active.id) == \"$ws\" then
+    hl.dispatch(hl.dsp.layout(\"$message\"))
+  end
+end, { type = \"oneshot\", timeout = 250 })"
 
-  if [[ -n $message ]]; then
-    for _ in {1..20}; do
+  # A floating workspace is first brought back to tiling by Omarchy's own mode call.
+  if [[ $(omarchy-hyprland-workspace-layout-current "$ws") == floating ]]; then
+    hyprctl eval "o.workspace_mode({ workspace = \"$ws\", mode = \"dwindle\" })" >/dev/null 2>&1
+  fi
+
+  mkdir -p "$MODES_DIR"
+  if [[ -z $opts && -z $setup && $layout == "$(omarchy-hyprland-workspace-layout-default)" ]]; then
+    # The plain default layout needs no file, and removing one applies nothing, so do it live.
+    rm -f "$MODES_DIR/$ws.lua"
+    hyprctl eval "$mode" >/dev/null 2>&1 || { notify "Could not apply “$name”"; exit 1; }
+  else
+    # Saved the way Super + L saves a layout, so it comes back on a config reload and the next
+    # Super + L replaces or removes it. Replaced whole, so the change is always seen.
+    if [[ -n $setup ]]; then
+      content=$(printf '%s\n%s' "$setup" "$rule")
+    else
+      content=$(printf '%s\n%s' "$mode" "$rule")
+    fi
+    [[ -n $sizing ]] && content+=$'\n'$sizing
+    printf '%s\n' "$content" >"$MODES_DIR/$ws.lua.tmp" && mv "$MODES_DIR/$ws.lua.tmp" "$MODES_DIR/$ws.lua" \
+      || { notify "Could not save “$name”"; exit 1; }
+
+    # Wait for the reload to land, so what is recorded and shown next is the new layout.
+    for _ in {1..30}; do
       [[ $(hyprctl activeworkspace -j | jq -r '.tiledLayout // empty') == "$rule_layout" ]] && break
       sleep 0.05
     done
-    hyprctl dispatch "hl.dsp.layout(\"$message\")" >/dev/null 2>&1
-  fi
-
-  # Saved the way Super + L saves a layout, so it comes back on a config reload
-  # and the next Super + L replaces or removes it. A plain default layout needs no file.
-  mkdir -p "$MODES_DIR"
-  if [[ -z $opts && -z $setup && $layout == "$(omarchy-hyprland-workspace-layout-default)" ]]; then
-    rm -f "$MODES_DIR/$ws.lua"
-  elif [[ -n $setup ]]; then
-    printf '%s\n%s\n' "$setup" "$rule" >"$MODES_DIR/$ws.lua"
-  else
-    printf '%s\n%s\n' "$mode" "$rule" >"$MODES_DIR/$ws.lua"
+    [[ -n $sizing ]] && sleep 0.4
   fi
 
   mkdir -p "$STATE"
